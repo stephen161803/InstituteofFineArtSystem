@@ -45,7 +45,21 @@ Mở file `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json`, kiểm tr
 
 > Nếu SQL Server của bạn dùng instance name khác (ví dụ `localhost\SQLEXPRESS`), hãy sửa lại `Server=` cho phù hợp.
 
-### 4. Chạy Backend
+### 4. Chạy nhanh (Windows)
+
+Nếu dùng Windows, có thể chạy cả backend lẫn frontend chỉ bằng một lệnh — double-click vào file `start-dev.bat` ở thư mục gốc, hoặc chạy:
+
+```bash
+start-dev.bat
+```
+
+Script sẽ tự mở 2 cửa sổ terminal riêng cho backend và frontend.
+
+> Yêu cầu đã chạy `npm install` trong thư mục `frontend` ít nhất một lần trước.
+
+---
+
+### 4. Chạy Backend (thủ công)
 
 ```bash
 cd InstituteofFineArtSystem/backend/IoFAApi
@@ -61,7 +75,7 @@ Backend chạy tại: `http://localhost:5117`
 > ```
 > Sau đó restart frontend (`npm run dev`) để áp dụng.
 
-### 5. Chạy Frontend
+### 5. Chạy Frontend (thủ công)
 
 ```bash
 cd InstituteofFineArtSystem/frontend
