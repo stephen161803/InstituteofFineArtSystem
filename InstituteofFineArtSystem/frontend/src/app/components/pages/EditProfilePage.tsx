@@ -5,6 +5,7 @@ import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Camera, UserCog, Save } from 'lucide-react';
+import { api } from '../../api/client';
 
 export function EditProfilePage() {
   const { currentUser, updateAvatar, updateProfile } = useAuth();
@@ -20,12 +21,15 @@ export function EditProfilePage() {
   const [passwordMismatch, setPasswordMismatch] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => updateAvatar(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const url = await api.uploadFile(file);
+      updateAvatar(url);
+    } catch {
+      // silently ignore
+    }
   };
 
   const handleSave = () => {

@@ -11,7 +11,7 @@ Hệ thống quản lý cuộc thi, triển lãm và bán tác phẩm nghệ thu
 
 ---
 
-## Các bước cài đặt
+## Cài đặt và chạy (Development)
 
 ### 1. Clone repo
 
@@ -22,20 +22,17 @@ cd InstituteofFineArtSystem
 
 ### 2. Tạo Database
 
-Mở SSMS (hoặc Azure Data Studio), kết nối vào SQL Server, sau đó mở và chạy file:
+Mở SSMS, kết nối vào SQL Server, sau đó mở và chạy file:
 
 ```
 InstituteofFineArtSystem/backend/IoFAApi/Data/scriptDB_IoFA-23032026.sql
 ```
 
-Script này sẽ tự động:
-- Tạo database `FineArtsInstitute_Final`
-- Tạo toàn bộ bảng, view, trigger
-- Insert dữ liệu mẫu
+Script sẽ tự động tạo database `FineArtsInstitute_Final`, toàn bộ bảng, view, trigger và dữ liệu mẫu.
 
 ### 3. Cấu hình Backend
 
-Mở file `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json`, kiểm tra connection string:
+Mở `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json`, kiểm tra connection string:
 
 ```json
 "ConnectionStrings": {
@@ -43,47 +40,71 @@ Mở file `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json`, kiểm tr
 }
 ```
 
-> Nếu SQL Server của bạn dùng instance name khác (ví dụ `localhost\SQLEXPRESS`), hãy sửa lại `Server=` cho phù hợp.
+> Nếu SQL Server dùng instance name khác (ví dụ `localhost\SQLEXPRESS`), sửa lại `Server=` cho phù hợp.
 
 ### 4. Chạy nhanh (Windows)
 
-Nếu dùng Windows, có thể chạy cả backend lẫn frontend chỉ bằng một lệnh — double-click vào file `start-dev.bat` ở thư mục gốc, hoặc chạy:
+Double-click `start-dev.bat` ở thư mục gốc — script tự mở 2 terminal riêng cho backend và frontend.
 
-```bash
-start-dev.bat
-```
+> Cần chạy `npm install` trong thư mục `frontend` ít nhất một lần trước.
 
-Script sẽ tự mở 2 cửa sổ terminal riêng cho backend và frontend.
+### 4. Chạy thủ công
 
-> Yêu cầu đã chạy `npm install` trong thư mục `frontend` ít nhất một lần trước.
-
----
-
-### 4. Chạy Backend (thủ công)
-
+**Backend:**
 ```bash
 cd InstituteofFineArtSystem/backend/IoFAApi
 dotnet restore
 dotnet run
 ```
 
-Backend chạy tại: `http://localhost:5117`
-
-> **Lưu ý port:** Nếu backend chạy ở port khác (xem terminal sau khi `dotnet run`), hãy cập nhật lại file `InstituteofFineArtSystem/frontend/.env`:
-> ```
-> VITE_API_URL=http://localhost:{PORT_THỰC_TẾ}/api
-> ```
-> Sau đó restart frontend (`npm run dev`) để áp dụng.
-
-### 5. Chạy Frontend (thủ công)
-
+**Frontend:**
 ```bash
 cd InstituteofFineArtSystem/frontend
 npm install
 npm run dev
 ```
 
-Frontend chạy tại: `http://localhost:5173`
+Frontend mặc định tại `http://localhost:5173`. Backend tự chọn port khi khởi động (xem terminal).
+
+---
+
+## Deploy (Production)
+
+### Build và publish
+
+Chạy `publish.bat` ở thư mục gốc:
+
+```bash
+publish.bat
+```
+
+Script sẽ:
+1. Build frontend (`npm run build`)
+2. Copy `dist/` vào `backend/wwwroot/`
+3. Publish backend ra `D:\Publish_Web`
+
+> Nếu app đang chạy từ `D:\Publish_Web`, cần dừng process trước khi publish lại.
+
+### Chạy sau khi publish
+
+```bash
+cd D:\Publish_Web
+dotnet IoFAApi.dll
+```
+
+Truy cập tại địa chỉ hiển thị trong terminal (ví dụ `http://localhost:5000`).
+
+### Lưu ý về file ảnh (uploads)
+
+Ảnh upload (artwork, avatar) được lưu tại `D:\Publish_Web\uploads\`.
+
+Khi publish lại, folder `D:\Publish_Web` bị xóa và tạo mới — **ảnh sẽ bị mất**. Để tránh mất ảnh, đổi đường dẫn lưu sang thư mục cố định trong `appsettings.json`:
+
+```json
+"Upload": {
+  "StoragePath": "D:\\IoFA_Uploads"
+}
+```
 
 ---
 
@@ -91,16 +112,16 @@ Frontend chạy tại: `http://localhost:5173`
 
 Mật khẩu tất cả tài khoản: `password123`
 
-| Username   | Role     |
-|------------|----------|
-| admin      | Admin    |
-| manager    | Manager  |
-| staff      | Staff    |
-| alice      | Student  |
-| bob        | Student  |
-| carol      | Student  |
-| customer1  | Customer |
-| customer2  | Customer |
+| Username  | Role     |
+|-----------|----------|
+| admin     | Admin    |
+| manager   | Manager  |
+| staff     | Staff    |
+| alice     | Student  |
+| bob       | Student  |
+| carol     | Student  |
+| customer1 | Customer |
+| customer2 | Customer |
 
 ---
 
@@ -117,6 +138,5 @@ InstituteofFineArtSystem/
 │       │   └── scriptDB_IoFA-23032026.sql  # Script tạo DB + data
 │       └── appsettings.json
 └── frontend/                 # React + Vite + TailwindCSS
-    ├── src/
-    └── .env                  # VITE_API_URL=http://localhost:5117/api
+    └── src/
 ```

@@ -29,6 +29,7 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { notificationsApi, type NotificationDto } from '../api/notifications';
 import { Badge } from './ui/badge';
+import { api } from '../api/client';
 
 export function DashboardLayout() {
   const { currentUser, logout } = useAuth();
@@ -47,12 +48,15 @@ export function DashboardLayout() {
 
   const openEditProfile = () => navigate('/dashboard/profile');
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => updateAvatar(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const url = await api.uploadFile(file);
+      updateAvatar(url);
+    } catch {
+      // silently ignore
+    }
   };
 
   const AvatarDisplay = ({ size = 'sm' }: { size?: 'sm' | 'lg' }) => {

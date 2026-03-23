@@ -46,9 +46,7 @@ export function EditProfileDialog({ open, onOpenChange }: EditProfileDialogProps
       const url = await api.uploadFile(file);
       updateAvatar(url);
     } catch {
-      const reader = new FileReader();
-      reader.onloadend = () => updateAvatar(reader.result as string);
-      reader.readAsDataURL(file);
+      // silently ignore
     }
   };
 

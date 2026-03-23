@@ -110,7 +110,7 @@ CREATE TABLE [dbo].[Submissions](
 	[CompetitionId] [int] NOT NULL,
 	[StudentId] [int] NOT NULL,
 	[Title] [nvarchar](200) NULL,
-	[WorkUrl] [nvarchar](500) NULL,
+	[WorkUrl] [nvarchar](Max) NULL,
 	[ProposedPrice] [decimal](18, 2) NULL,
 	[SubmittedAt] [datetimeoffset](7) NULL,
 	[FileName] [nvarchar](500) NULL,
@@ -419,7 +419,7 @@ CREATE TABLE [dbo].[Users](
 	[IsActive] [bit] NULL,
 	[RoleId] [int] NOT NULL,
 	[CreatedAt] [datetimeoffset](7) NULL,
-	[AvatarUrl] [nvarchar](500) NULL,
+	[AvatarUrl] [nvarchar](Max) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

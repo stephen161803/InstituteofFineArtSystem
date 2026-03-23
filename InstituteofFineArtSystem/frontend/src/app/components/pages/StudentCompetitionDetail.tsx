@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import { competitionsApi, type CompetitionDto } from '../../api/competitions';
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
 import { awardsApi, type AwardDto } from '../../api/awards';
+import { api } from '../../api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -82,20 +83,23 @@ export function StudentCompetitionDetail() {
 
   const isCompetitionOpen = competition.status === 'Ongoing' && new Date() <= new Date(competition.endDate);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, target: 'new' | 'edit') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, target: 'new' | 'edit') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
+    setSaving(true);
+    try {
+      const url = await api.uploadFile(file);
       if (target === 'new') {
-        setSubmissionForm(prev => ({ ...prev, workUrl: result, fileName: file.name }));
+        setSubmissionForm(prev => ({ ...prev, workUrl: url, fileName: file.name }));
         setFormErrors(p => ({ ...p, workUrl: '' }));
       } else if (editingSubmission) {
-        setEditingSubmission(prev => prev ? { ...prev, workUrl: result, fileName: file.name } : prev);
+        setEditingSubmission(prev => prev ? { ...prev, workUrl: url, fileName: file.name } : prev);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to upload file');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const validateForm = () => {
