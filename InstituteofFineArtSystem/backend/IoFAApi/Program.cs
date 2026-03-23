@@ -46,6 +46,7 @@ builder.Services.AddSpaStaticFiles(config =>
     config.RootPath = "wwwroot");
 
 var app = builder.Build();
+var config = app.Configuration;
 
 // ── Middleware ────────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
@@ -57,6 +58,17 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Serve uploaded files from the uploads directory
+var uploadsPath = config["Upload:StoragePath"] ?? "uploads";
+if (!Path.IsPathRooted(uploadsPath))
+    uploadsPath = Path.Combine(app.Environment.ContentRootPath, uploadsPath);
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
 
 // Serve React frontend from wwwroot
 app.UseDefaultFiles();

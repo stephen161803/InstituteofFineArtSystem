@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { submissionsApi, SubmissionDto } from '../../api/submissions';
 import { awardsApi, StudentAwardDto } from '../../api/awards';
@@ -13,6 +13,7 @@ import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Edit, Trash2, Upload as UploadIcon, Image as ImageIcon, X, Download, Trophy, Star, Eye, Loader2 } from 'lucide-react';
+import { api } from '../../api/client';
 import { toast } from 'sonner';
 
 const RATING_COLOR: Record<string, string> = {
@@ -48,6 +49,8 @@ export function StudentSubmissions() {
   const [imagePreview, setImagePreview] = useState('');
   const [detailSubmission, setDetailSubmission] = useState<SubmissionDto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     title: '', workUrl: '', fileName: '',
     proposedPrice: 0, description: '', quotation: '', poem: '',
@@ -148,16 +151,19 @@ export function StudentSubmissions() {
     setEditingSubmission(null); setIsDialogOpen(false); setImagePreview('');
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setImagePreview(result);
-      setFormData((p) => ({ ...p, workUrl: result, fileName: file.name }));
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const url = await api.uploadFile(file);
+      setImagePreview(url);
+      setFormData((p) => ({ ...p, workUrl: url, fileName: file.name }));
+    } catch {
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading) {
@@ -190,7 +196,9 @@ export function StudentSubmissions() {
             <div className="space-y-2">
               <Label>Artwork File</Label>
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center cursor-pointer hover:bg-slate-50" onClick={() => document.getElementById('imgUpload')?.click()}>
-                {(imagePreview || formData.workUrl) ? (
+                {uploading ? (
+                  <div className="py-4"><Loader2 className="size-8 mx-auto mb-2 animate-spin text-slate-400" /><p className="text-sm text-slate-500">Uploading...</p></div>
+                ) : (imagePreview || formData.workUrl) ? (
                   <div className="space-y-2">
                     <img src={imagePreview || formData.workUrl} alt="Preview" className="w-full h-40 object-cover rounded-lg" />
                     <p className="text-xs text-slate-500 truncate">{formData.fileName || 'Current image'}</p>

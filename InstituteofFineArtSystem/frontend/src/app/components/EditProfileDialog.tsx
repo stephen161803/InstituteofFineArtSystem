@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Camera, UserCog } from 'lucide-react';
+import { api } from '../api/client';
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -38,12 +39,17 @@ export function EditProfileDialog({ open, onOpenChange }: EditProfileDialogProps
     onOpenChange(val);
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => updateAvatar(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const url = await api.uploadFile(file);
+      updateAvatar(url);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => updateAvatar(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = () => {
