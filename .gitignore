@@ -1,0 +1,37 @@
+# ===========================
+# Visual Studio
+# ===========================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ===========================
+# .NET / C# Backend
+# ===========================
+InstituteofFineArtSystem/backend/IoFAApi/bin/
+InstituteofFineArtSystem/backend/IoFAApi/obj/
+
+# ===========================
+# Node / Frontend
+# ===========================
+InstituteofFineArtSystem/frontend/node_modules/
+InstituteofFineArtSystem/frontend/dist/
+InstituteofFineArtSystem/frontend/.vite/
+
+# ===========================
+# Environment / Secrets
+# ===========================
+*.env
+*.env.local
+*.env.development.local
+*.env.production.local
+appsettings.Development.json
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,148 @@
+Navigating with artwork: {
+  "id": "2",
+  "studentId": "2",
+  "competitionId": "1",
+  "imageUrl": "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800",
+  "title": "Spring Meadow",
+  "description": "A peaceful spring landscape",
+  "poem": "In fields of green and skies of blue,\nSpring whispers softly, fresh and new",
+  "submissionDate": "2026-03-08",
+  "rating": "better",
+  "remarks": "Good effort with room for improvement",
+  "positivePoints": "Nice composition and color harmony",
+  "negativePoints": "Could use more detail in foreground",
+  "areasOfImprovement": "Focus on texture and detail work",
+  "staffId": "1",
+  "student": {
+    "id": "2",
+    "userId": "5",
+    "name": "Bob Smith",
+    "email": "bob@student.com",
+    "phone": "+1-555-0202",
+    "admissionDate": "2023-09-01",
+    "class": "Grade 11",
+    "rollNumber": "A002",
+    "remarks": "Shows promise in landscape painting"
+  },
+  "competition": {
+    "id": "1",
+    "title": "Spring Art Festival 2026",
+    "description": "Celebrate spring with vibrant paintings",
+    "startDate": "2026-03-01",
+    "endDate": "2026-03-31",
+    "conditions": "Original artwork only. Size: 18x24 inches minimum",
+    "awardDetails": "1st Prize: $500, 2nd Prize: $300, 3rd Prize: $150",
+    "status": "ongoing"
+  },
+  "isSold": false,
+  "price": 1828168
+}
+PurchaseForm - location: {
+  "pathname": "/purchase",
+  "search": "",
+  "hash": "",
+  "state": {
+    "artwork": {
+      "id": "2",
+      "title": "Spring Meadow",
+      "description": "A peaceful spring landscape",
+      "imageUrl": "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800",
+      "price": 1828168,
+      "isSold": false,
+      "student": {
+        "id": "2",
+        "userId": "5",
+        "name": "Bob Smith",
+        "email": "bob@student.com",
+        "phone": "+1-555-0202",
+        "admissionDate": "2023-09-01",
+        "class": "Grade 11",
+        "rollNumber": "A002",
+        "remarks": "Shows promise in landscape painting"
+      },
+      "competition": {
+        "id": "1",
+        "title": "Spring Art Festival 2026",
+        "description": "Celebrate spring with vibrant paintings",
+        "startDate": "2026-03-01",
+        "endDate": "2026-03-31",
+        "conditions": "Original artwork only. Size: 18x24 inches minimum",
+        "awardDetails": "1st Prize: $500, 2nd Prize: $300, 3rd Prize: $150",
+        "status": "ongoing"
+      },
+      "submissionDate": "2026-03-08"
+    }
+  },
+  "key": "f3vgj3gx"
+}
+PurchaseForm - location.state: {
+  "artwork": {
+    "id": "2",
+    "title": "Spring Meadow",
+    "description": "A peaceful spring landscape",
+    "imageUrl": "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800",
+    "price": 1828168,
+    "isSold": false,
+    "student": {
+      "id": "2",
+      "userId": "5",
+      "name": "Bob Smith",
+      "email": "bob@student.com",
+      "phone": "+1-555-0202",
+      "admissionDate": "2023-09-01",
+      "class": "Grade 11",
+      "rollNumber": "A002",
+      "remarks": "Shows promise in landscape painting"
+    },
+    "competition": {
+      "id": "1",
+      "title": "Spring Art Festival 2026",
+      "description": "Celebrate spring with vibrant paintings",
+      "startDate": "2026-03-01",
+      "endDate": "2026-03-31",
+      "conditions": "Original artwork only. Size: 18x24 inches minimum",
+      "awardDetails": "1st Prize: $500, 2nd Prize: $300, 3rd Prize: $150",
+      "status": "ongoing"
+    },
+    "submissionDate": "2026-03-08"
+  }
+}
+PurchaseForm - artworkData: {
+  "id": "2",
+  "title": "Spring Meadow",
+  "description": "A peaceful spring landscape",
+  "imageUrl": "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800",
+  "price": 1828168,
+  "isSold": false,
+  "student": {
+    "id": "2",
+    "userId": "5",
+    "name": "Bob Smith",
+    "email": "bob@student.com",
+    "phone": "+1-555-0202",
+    "admissionDate": "2023-09-01",
+    "class": "Grade 11",
+    "rollNumber": "A002",
+    "remarks": "Shows promise in landscape painting"
+  },
+  "competition": {
+    "id": "1",
+    "title": "Spring Art Festival 2026",
+    "description": "Celebrate spring with vibrant paintings",
+    "startDate": "2026-03-01",
+    "endDate": "2026-03-31",
+    "conditions": "Original artwork only. Size: 18x24 inches minimum",
+    "awardDetails": "1st Prize: $500, 2nd Prize: $300, 3rd Prize: $150",
+    "status": "ongoing"
+  },
+  "submissionDate": "2026-03-08"
+}
+PurchaseForm - location: {
+  "pathname": "/purchase",
+  "search": "",
+  "hash": "",
+  "state": null,
+  "key": "default"
+}
+PurchaseForm - location.state: null
+PurchaseForm - artworkData: 

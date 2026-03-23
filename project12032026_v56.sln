@@ -1,0 +1,37 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InstituteofFineArtSystem", "InstituteofFineArtSystem", "{EBABD536-39E3-BEDE-3DD5-8CBD32EF0EE4}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "IoFAFrontend", "InstituteofFineArtSystem\frontend\IoFAFrontend.esproj", "{A1C2D3E4-F5A6-7B8C-9D0E-1F2A3B4C5D6E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{B1B1F2A0-FBA5-7F91-51CC-549D5F4F7535}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IoFAApi", "InstituteofFineArtSystem\backend\IoFAApi\IoFAApi.csproj", "{2EE1732B-CD83-3CC6-7564-24B9B952668E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2EE1732B-CD83-3CC6-7564-24B9B952668E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EE1732B-CD83-3CC6-7564-24B9B952668E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EE1732B-CD83-3CC6-7564-24B9B952668E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EE1732B-CD83-3CC6-7564-24B9B952668E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1C2D3E4-F5A6-7B8C-9D0E-1F2A3B4C5D6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1C2D3E4-F5A6-7B8C-9D0E-1F2A3B4C5D6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B1B1F2A0-FBA5-7F91-51CC-549D5F4F7535} = {EBABD536-39E3-BEDE-3DD5-8CBD32EF0EE4}
+		{2EE1732B-CD83-3CC6-7564-24B9B952668E} = {B1B1F2A0-FBA5-7F91-51CC-549D5F4F7535}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E73137A6-7989-4847-8190-348FF8E5BB0E}
+	EndGlobalSection
+EndGlobal
