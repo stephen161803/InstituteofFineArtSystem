@@ -1,0 +1,6 @@
+@echo off
+echo Starting Backend...
+start "Backend" cmd /k "cd InstituteofFineArtSystem\backend\IoFAApi && dotnet run"
+
+echo Starting Frontend...
+start "Frontend" cmd /k "cd InstituteofFineArtSystem\frontend && npm run dev"

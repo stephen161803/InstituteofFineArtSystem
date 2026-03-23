@@ -12,6 +12,9 @@ namespace IoFAApi.Controllers;
 [Authorize]
 public class SubmissionsController(AppDbContext db) : ControllerBase
 {
+    private int? CurrentUserIdOrNull =>
+        int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : null;
+
     private int CurrentUserId =>
         int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 
@@ -34,6 +37,7 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
     );
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll([FromQuery] int? competitionId)
     {
         var q = db.Submissions
@@ -45,7 +49,8 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
         if (competitionId.HasValue) q = q.Where(s => s.CompetitionId == competitionId.Value);
 
         var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-        if (role == "student") q = q.Where(s => s.StudentId == CurrentUserId);
+        if (role == "student" && CurrentUserIdOrNull.HasValue)
+            q = q.Where(s => s.StudentId == CurrentUserIdOrNull.Value);
 
         return Ok((await q.ToListAsync()).Select(ToDto));
     }

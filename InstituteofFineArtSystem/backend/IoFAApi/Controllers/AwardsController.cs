@@ -17,6 +17,7 @@ public class AwardsController(AppDbContext db) : ControllerBase
         Ok(await db.Awards.Select(a => new AwardDto(a.Id, a.AwardName, a.Description)).ToListAsync());
 
     [HttpGet("student-awards")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetStudentAwards([FromQuery] int? submissionId, [FromQuery] int? studentId)
     {
         var q = db.StudentAwards
