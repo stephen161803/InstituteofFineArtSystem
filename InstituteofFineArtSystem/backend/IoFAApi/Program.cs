@@ -42,6 +42,9 @@ builder.Services.AddCors(opt =>
          .AllowAnyHeader()
          .AllowAnyMethod()));
 
+builder.Services.AddSpaStaticFiles(config =>
+    config.RootPath = "wwwroot");
+
 var app = builder.Build();
 
 // ── Middleware ────────────────────────────────────────────────────────────
@@ -54,5 +57,10 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Serve React frontend from wwwroot
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.MapFallbackToFile("index.html");
 
 app.Run();
