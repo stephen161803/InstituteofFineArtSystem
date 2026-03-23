@@ -127,4 +127,63 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return Ok(new { message = "Sale recorded", id = sale.Id });
     }
+
+    // Customer self-purchase endpoint
+    [HttpPost("purchase")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> Purchase([FromBody] CustomerPurchaseRequest req)
+    {
+        var username = User.Identity?.Name;
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
+        if (user is null) return Unauthorized();
+
+        // Auto-create Customer record if not exists
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
+        if (customer is null)
+        {
+            customer = new Customer { UserId = user.Id };
+            db.Customers.Add(customer);
+            await db.SaveChangesAsync();
+        }
+
+        var es = await db.ExhibitionSubmissions.FindAsync(req.ExhibitionSubmissionId);
+        if (es is null) return NotFound(new { message = "Artwork not found in exhibition" });
+        if (es.Status == "Sold") return BadRequest(new { message = "This artwork has already been sold" });
+
+        var sale = new Sale
+            { ExhibitionSubmissionId = req.ExhibitionSubmissionId, CustomerId = customer.Id, SoldPrice = req.SoldPrice };
+        db.Sales.Add(sale);
+        es.Status = "Sold";
+        await db.SaveChangesAsync();
+        return Ok(new { message = "Purchase submitted successfully", id = sale.Id });
+    }
+
+    [HttpGet("my-sales")]
+    [Authorize]
+    public async Task<IActionResult> GetMySales()
+    {
+        var username = User.Identity?.Name;
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
+        if (user is null) return Unauthorized();
+
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
+        if (customer is null) return Ok(Array.Empty<object>());
+
+        var sales = await db.Sales
+            .Include(s => s.ExhibitionSubmission)
+                .ThenInclude(es => es.Submission)
+            .Include(s => s.ExhibitionSubmission)
+                .ThenInclude(es => es.Exhibition)
+            .Where(s => s.CustomerId == customer.Id)
+            .OrderByDescending(s => s.SoldDate)
+            .Select(s => new SaleDto(
+                s.Id, s.ExhibitionSubmissionId, s.CustomerId,
+                null, s.SoldPrice, s.SoldDate.ToString("o"),
+                s.ExhibitionSubmission.Submission != null ? s.ExhibitionSubmission.Submission.Title : null,
+                s.ExhibitionSubmission.Exhibition != null ? s.ExhibitionSubmission.Exhibition.Title : null,
+                s.ExhibitionSubmission.Submission != null ? s.ExhibitionSubmission.Submission.WorkUrl : null))
+            .ToListAsync();
+
+        return Ok(sales);
+    }
 }

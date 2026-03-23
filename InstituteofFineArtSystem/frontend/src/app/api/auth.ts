@@ -9,6 +9,7 @@ export interface AuthResponse {
   email?: string;
   phone?: string;
   avatarUrl?: string;
+  address?: string;
 }
 
 export const authApi = {

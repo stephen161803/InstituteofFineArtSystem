@@ -9,6 +9,7 @@ export interface SaleDto {
   soldDate: string;
   submissionTitle?: string;
   exhibitionTitle?: string;
+  workUrl?: string;
 }
 
 export interface ExhibitionSubmissionDto {
@@ -42,6 +43,9 @@ export const exhibitionsApi = {
   addSubmission: (exhibitionId: number, submissionId: number, proposedPrice: number) =>
     api.post(`/exhibitions/${exhibitionId}/submissions`, { submissionId, proposedPrice }),
   removeSubmission: (esId: number) => api.delete(`/exhibitions/submissions/${esId}`),
+  purchase: (data: { exhibitionSubmissionId: number; soldPrice: number }) =>
+    api.post('/exhibitions/purchase', data),
   createSale: (data: { exhibitionSubmissionId: number; customerId: number; soldPrice: number }) =>
     api.post('/exhibitions/sales', data),
+  getMySales: () => api.get<SaleDto[]>('/exhibitions/my-sales'),
 };

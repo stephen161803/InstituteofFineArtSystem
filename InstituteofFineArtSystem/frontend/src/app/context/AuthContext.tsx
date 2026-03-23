@@ -27,6 +27,7 @@ function toUser(r: AuthResponse): User {
     fullName: r.fullName,
     email: r.email,
     phone: r.phone,
+    address: r.address,
     isActive: true,
     roleId: 0,
     role: r.role as User['role'],

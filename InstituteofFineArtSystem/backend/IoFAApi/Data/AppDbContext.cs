@@ -102,6 +102,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(s => s.Customer).WithMany(c => c.Sales).HasForeignKey(s => s.CustomerId);
         mb.Entity<Sale>()
             .Property(s => s.SoldPrice).HasColumnType("decimal(18,2)");
+        mb.Entity<Sale>()
+            .ToTable(tb => tb.HasTrigger("dummy_trigger_marker")); // table has triggers — disable OUTPUT clause
 
         // Notification
         mb.Entity<Notification>()

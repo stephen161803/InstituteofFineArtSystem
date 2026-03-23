@@ -37,6 +37,7 @@ export function ExhibitionArtworksPage() {
     } else {
       sessionStorage.setItem('purchaseArtwork', JSON.stringify({
         id: es.submissionId,
+        exhibitionSubmissionId: es.id,
         title: es.submissionTitle,
         workUrl: es.workUrl,
         price: es.proposedPrice,

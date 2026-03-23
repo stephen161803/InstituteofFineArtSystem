@@ -9,7 +9,7 @@ set FRONTEND_DIR=%ROOT_DIR%InstituteofFineArtSystem\frontend
 
 echo.
 echo [1/2] Starting Backend...
-start "IoFA Backend" cmd /k "cd /d "%BACKEND_DIR%" && dotnet run"
+start "IoFA Backend" cmd /k "cd /d "%BACKEND_DIR%" && dotnet run --launch-profile http"
 
 timeout /t 5 /nobreak > nul
 

@@ -9,6 +9,7 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { ArrowLeft, ShoppingCart, DollarSign, User, Mail, Phone, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { exhibitionsApi } from '../../api/exhibitions';
 
 export function PurchaseForm() {
   const navigate = useNavigate();
@@ -33,16 +34,20 @@ export function PurchaseForm() {
       try {
         const artwork = JSON.parse(storedArtwork);
         setArtworkData(artwork);
-        // Set default offered price to suggested price
+        // Pre-fill form with currentUser info + suggested price
         setFormData(prev => ({
           ...prev,
+          fullName: currentUser?.fullName || '',
+          email: currentUser?.email || '',
+          phone: currentUser?.phone || '',
+          address: currentUser?.address || '',
           offeredPrice: artwork.price?.toString() || '',
         }));
       } catch (error) {
         console.error('Error parsing artwork data:', error);
       }
     }
-  }, [artworkId]);
+  }, [artworkId, currentUser]);
 
   if (!artworkData) {
     return (
@@ -68,56 +73,27 @@ export function PurchaseForm() {
     }).format(price);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate offered price
     const offeredPrice = parseFloat(formData.offeredPrice);
     if (isNaN(offeredPrice) || offeredPrice < artworkData.price) {
       toast.error(`Offered price must be at least ${formatPrice(artworkData.price)}`);
       return;
     }
-    
-    // Create purchase record
-    const purchase = {
-      id: `purchase-${Date.now()}`,
-      customerId: currentUser?.id,
-      artworkId: artworkData.id,
-      artworkTitle: artworkData.title,
-      artworkImage: artworkData.imageUrl,
-      artistName: artworkData.student?.name,
-      amount: offeredPrice,
-      purchaseDate: new Date().toISOString(),
-      customerInfo: {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        notes: formData.notes,
-      },
-      status: 'pending',
-    };
-    
-    // Save to localStorage
-    const existingPurchases = JSON.parse(localStorage.getItem('purchaseHistory') || '[]');
-    existingPurchases.push(purchase);
-    localStorage.setItem('purchaseHistory', JSON.stringify(existingPurchases));
-    
-    // Show success message with offered price
-    const message = offeredPrice > artworkData.price 
-      ? `Purchase request submitted with offered price: ${formatPrice(offeredPrice)}! We will contact you soon.`
-      : 'Purchase request submitted successfully! We will contact you soon.';
-    
-    toast.success(message);
-    
-    // Clear sessionStorage
-    sessionStorage.removeItem('purchaseArtwork');
-    
-    // Reset and navigate
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2000);
+
+    try {
+      await exhibitionsApi.purchase({
+        exhibitionSubmissionId: artworkData.exhibitionSubmissionId,
+        soldPrice: offeredPrice,
+      });
+
+      toast.success('Purchase request submitted successfully! We will contact you soon.');
+      sessionStorage.removeItem('purchaseArtwork');
+      setTimeout(() => navigate('/dashboard'), 2000);
+    } catch {
+      toast.error('Failed to submit purchase. Please try again.');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -161,7 +137,7 @@ export function PurchaseForm() {
               <CardContent className="space-y-4">
                 <div className="aspect-square rounded-lg overflow-hidden bg-slate-100">
                   <img 
-                    src={artworkData.imageUrl} 
+                    src={artworkData.workUrl} 
                     alt={artworkData.title}
                     className="w-full h-full object-cover"
                   />

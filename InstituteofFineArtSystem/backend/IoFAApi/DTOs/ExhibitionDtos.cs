@@ -30,7 +30,8 @@ public record SaleDto(
     decimal SoldPrice,
     string SoldDate,
     string? SubmissionTitle,
-    string? ExhibitionTitle
+    string? ExhibitionTitle,
+    string? WorkUrl = null
 );
 
 public record CreateExhibitionRequest(
@@ -52,3 +53,5 @@ public record UpdateExhibitionRequest(
 public record AddExhibitionSubmissionRequest(int SubmissionId, decimal ProposedPrice);
 
 public record CreateSaleRequest(int ExhibitionSubmissionId, int CustomerId, decimal SoldPrice);
+
+public record CustomerPurchaseRequest(int ExhibitionSubmissionId, decimal SoldPrice);

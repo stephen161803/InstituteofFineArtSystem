@@ -22,9 +22,10 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
         if (user is null || user.PasswordHash != req.Password)
             return Unauthorized(new { message = "Invalid username or password" });
 
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
         var token = jwt.GenerateToken(user);
         return Ok(new AuthResponse(token, user.Id, user.Username, user.FullName,
-            user.Role.RoleName.ToLower(), user.Email, user.Phone, user.AvatarUrl));
+            user.Role.RoleName.ToLower(), user.Email, user.Phone, user.AvatarUrl, customer?.Address));
     }
 
     [HttpPost("register")]
@@ -72,8 +73,9 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         var user = await db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return NotFound();
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
         return Ok(new AuthResponse("", user.Id, user.Username, user.FullName,
-            user.Role.RoleName.ToLower(), user.Email, user.Phone, user.AvatarUrl));
+            user.Role.RoleName.ToLower(), user.Email, user.Phone, user.AvatarUrl, customer?.Address));
     }
 
     [Authorize]
@@ -97,8 +99,9 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
         if (req.AvatarUrl is not null) user.AvatarUrl = req.AvatarUrl;
 
         await db.SaveChangesAsync();
+        var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == userId);
         var token = jwt.GenerateToken(user);
         return Ok(new AuthResponse(token, user.Id, user.Username, user.FullName,
-            user.Role.RoleName.ToLower(), user.Email, user.Phone, user.AvatarUrl));
+            user.Role.RoleName.ToLower(), user.Email, user.Phone, user.AvatarUrl, customer?.Address));
     }
 }

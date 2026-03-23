@@ -18,5 +18,6 @@ public record AuthResponse(
     string Role,
     string? Email,
     string? Phone,
-    string? AvatarUrl
+    string? AvatarUrl,
+    string? Address = null
 );
