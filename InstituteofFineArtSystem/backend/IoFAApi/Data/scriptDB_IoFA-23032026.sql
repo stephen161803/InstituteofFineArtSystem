@@ -1,15 +1,12 @@
 USE [master]
 GO
 /****** Object:  Database [FineArtsInstitute_Final]    Script Date: 23/03/2026 1:29:14 CH ******/
-CREATE DATABASE [FineArtsInstitute_Final]
- CONTAINMENT = NONE
- ON  PRIMARY 
-( NAME = N'FineArtsInstitute_Final', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\FineArtsInstitute_Final.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
- LOG ON 
-( NAME = N'FineArtsInstitute_Final_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL17.MSSQLSERVER\MSSQL\DATA\FineArtsInstitute_Final_log.ldf' , SIZE = 8192KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
- WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'FineArtsInstitute_Final')
+BEGIN
+    CREATE DATABASE [FineArtsInstitute_Final]
+END
 GO
-ALTER DATABASE [FineArtsInstitute_Final] SET COMPATIBILITY_LEVEL = 170
+ALTER DATABASE [FineArtsInstitute_Final] SET COMPATIBILITY_LEVEL = 150
 GO
 IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
 begin
