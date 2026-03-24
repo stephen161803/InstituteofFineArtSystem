@@ -50,13 +50,14 @@ export function ManageExhibitions() {
     e.preventDefault();
     setSaving(true);
     try {
-      const created = await exhibitionsApi.create({
+      await exhibitionsApi.create({
         title: exhibitionForm.title,
         location: exhibitionForm.location || undefined,
         startDate: exhibitionForm.startDate || undefined,
         endDate: exhibitionForm.endDate || undefined,
-      }) as ExhibitionDto;
-      setExhibitions(prev => [...prev, created]);
+      });
+      const updated = await exhibitionsApi.getAll();
+      setExhibitions(updated);
       toast.success('Exhibition added successfully');
       setExhibitionForm({ title: '', location: '', startDate: '', endDate: '' });
       setIsExhibitionDialogOpen(false);

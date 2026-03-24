@@ -115,7 +115,7 @@ export function StudentSubmissions() {
     if (sub && !canEdit(sub)) { toast.error('Cannot delete after competition end date'); return; }
     try {
       await submissionsApi.delete(id);
-      setSubmissions((prev) => prev.filter((s) => s.id !== id));
+      await loadAll();
       toast.success('Submission deleted');
     } catch {
       toast.error('Failed to delete submission');
@@ -127,7 +127,7 @@ export function StudentSubmissions() {
     if (!editingSubmission) return;
     setSaving(true);
     try {
-      const updated = await submissionsApi.update(editingSubmission.id, {
+      await submissionsApi.update(editingSubmission.id, {
         title: formData.title,
         workUrl: formData.workUrl || null,
         fileName: formData.fileName || null,
@@ -136,7 +136,7 @@ export function StudentSubmissions() {
         quotation: formData.quotation || null,
         poem: formData.poem || null,
       });
-      setSubmissions((prev) => prev.map((s) => s.id === editingSubmission.id ? updated : s));
+      await loadAll();
       toast.success('Artwork updated successfully');
       resetForm();
     } catch {

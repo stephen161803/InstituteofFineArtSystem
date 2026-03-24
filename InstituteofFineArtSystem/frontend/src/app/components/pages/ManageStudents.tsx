@@ -33,11 +33,16 @@ export function ManageStudents() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const loadStudents = () => {
+    setLoading(true);
     usersApi.getStudents()
       .then(setStudents)
       .catch(() => toast.error('Failed to load students'))
       .finally(() => setLoading(false));
-  }, []);
+  };
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return students;
@@ -88,15 +93,15 @@ export function ManageStudents() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSaving(true);
     try {
-      const created = await usersApi.createStudent({
+      await usersApi.createStudent({
         username: formData.username, password: formData.password,
         fullName: formData.fullName, email: formData.email, phone: formData.phone || undefined,
         admissionNumber: formData.admissionNumber,
         admissionDate: formData.admissionDate || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
         address: formData.address || undefined,
-      }) as StudentDto;
-      setStudents(prev => [...prev, created]);
+      });
+      await loadStudents();
       toast.success('Student added successfully');
       setIsAddDialogOpen(false);
       resetForm();
@@ -113,15 +118,15 @@ export function ManageStudents() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSaving(true);
     try {
-      const updated = await usersApi.updateStudent(selectedStudent.userId, {
+      await usersApi.updateStudent(selectedStudent.userId, {
         fullName: formData.fullName, email: formData.email, phone: formData.phone || undefined,
         admissionNumber: formData.admissionNumber,
         admissionDate: formData.admissionDate || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
         address: formData.address || undefined,
         ...(formData.password ? { newPassword: formData.password } : {}),
-      }) as StudentDto;
-      setStudents(prev => prev.map(s => s.userId === selectedStudent.userId ? updated : s));
+      });
+      await loadStudents();
       toast.success('Student updated successfully');
       setIsEditDialogOpen(false);
       setSelectedStudent(null);
@@ -138,7 +143,7 @@ export function ManageStudents() {
     setSaving(true);
     try {
       await usersApi.deleteStudent(selectedStudent.userId);
-      setStudents(prev => prev.filter(s => s.userId !== selectedStudent.userId));
+      await loadStudents();
       toast.success('Student deleted successfully');
       setIsDeleteDialogOpen(false);
       setSelectedStudent(null);

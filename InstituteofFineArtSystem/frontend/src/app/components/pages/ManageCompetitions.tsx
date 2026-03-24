@@ -110,7 +110,7 @@ export function ManageCompetitions() {
   const handleDelete = async (id: number) => {
     try {
       await competitionsApi.delete(id);
-      setCompetitions((prev) => prev.filter((c) => c.id !== id));
+      await loadData();
       toast.success('Competition deleted successfully');
     } catch {
       toast.error('Failed to delete competition');

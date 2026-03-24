@@ -36,6 +36,10 @@ export function StudentCompetitionDetail() {
 
   useEffect(() => {
     if (!id) return;
+    loadData();
+  }, [id]);
+
+  const loadData = () => {
     Promise.all([
       competitionsApi.getById(Number(id)),
       submissionsApi.getAll(Number(id)),
@@ -46,7 +50,7 @@ export function StudentCompetitionDetail() {
       setAwards(awds);
     }).catch(() => toast.error('Failed to load competition'))
       .finally(() => setLoading(false));
-  }, [id]);
+  };
 
   if (loading) {
     return (
@@ -116,7 +120,7 @@ export function StudentCompetitionDetail() {
     if (!currentUser) return;
     setSaving(true);
     try {
-      const created = await submissionsApi.create({
+      await submissionsApi.create({
         competitionId: competition.id,
         title: submissionForm.title,
         workUrl: submissionForm.workUrl || undefined,
@@ -125,8 +129,10 @@ export function StudentCompetitionDetail() {
         description: submissionForm.description || undefined,
         quotation: submissionForm.quotation || undefined,
         poem: submissionForm.poem || undefined,
-      }) as SubmissionDto;
-      setAllSubmissions(prev => [...prev, created]);
+      });
+      await Promise.all([
+        submissionsApi.getAll(competition.id),
+      ]).then(([subs]) => setAllSubmissions(subs));
       toast.success('Artwork submitted successfully!');
       setIsSubmitDialogOpen(false);
       setSubmissionForm(emptyForm);
@@ -146,7 +152,7 @@ export function StudentCompetitionDetail() {
     }
     setSaving(true);
     try {
-      const updated = await submissionsApi.update(editingSubmission.id, {
+      await submissionsApi.update(editingSubmission.id, {
         title: editingSubmission.title,
         workUrl: editingSubmission.workUrl,
         fileName: editingSubmission.fileName,
@@ -154,8 +160,8 @@ export function StudentCompetitionDetail() {
         description: editingSubmission.description,
         quotation: editingSubmission.quotation,
         poem: editingSubmission.poem,
-      }) as SubmissionDto;
-      setAllSubmissions(prev => prev.map(s => s.id === updated.id ? updated : s));
+      });
+      await submissionsApi.getAll(competition!.id).then(subs => setAllSubmissions(subs));
       toast.success('Artwork updated successfully!');
       setEditingSubmission(null);
       setFormErrors({});

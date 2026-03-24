@@ -33,11 +33,16 @@ export function ManageStaff() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    loadStaff();
+  }, []);
+
+  const loadStaff = () => {
+    setLoading(true);
     usersApi.getStaff()
       .then(setStaff)
       .catch(() => toast.error('Failed to load staff'))
       .finally(() => setLoading(false));
-  }, []);
+  };
 
   const filteredStaff = useMemo(() => {
     if (!searchQuery.trim()) return staff;
@@ -87,14 +92,14 @@ export function ManageStaff() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSaving(true);
     try {
-      const created = await usersApi.createStaff({
+      await usersApi.createStaff({
         username: formData.username, password: formData.password,
         fullName: formData.fullName, email: formData.email, phone: formData.phone,
         dateJoined: formData.dateJoined || undefined,
         subjectHandled: formData.subjectHandled || undefined,
         remarks: formData.remarks || undefined,
-      }) as StaffDto;
-      setStaff(prev => [...prev, created]);
+      });
+      await loadStaff();
       toast.success('Staff member added successfully');
       setIsAddDialogOpen(false);
       resetForm();
@@ -111,14 +116,14 @@ export function ManageStaff() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSaving(true);
     try {
-      const updated = await usersApi.updateStaff(selectedStaff.userId, {
+      await usersApi.updateStaff(selectedStaff.userId, {
         fullName: formData.fullName, email: formData.email, phone: formData.phone,
         dateJoined: formData.dateJoined || undefined,
         subjectHandled: formData.subjectHandled || undefined,
         remarks: formData.remarks || undefined,
         ...(formData.password ? { newPassword: formData.password } : {}),
-      }) as StaffDto;
-      setStaff(prev => prev.map(s => s.userId === selectedStaff.userId ? updated : s));
+      });
+      await loadStaff();
       toast.success('Staff member updated successfully');
       setIsEditDialogOpen(false);
       setSelectedStaff(null);
@@ -135,7 +140,7 @@ export function ManageStaff() {
     setSaving(true);
     try {
       await usersApi.deleteStaff(selectedStaff.userId);
-      setStaff(prev => prev.filter(s => s.userId !== selectedStaff.userId));
+      await loadStaff();
       toast.success('Staff member deleted successfully');
       setIsDeleteDialogOpen(false);
       setSelectedStaff(null);
