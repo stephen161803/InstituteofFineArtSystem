@@ -216,7 +216,7 @@ export function ManageStaff() {
                   <TableRow key={s.userId}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">{s.fullName.charAt(0)}</div>
+                        <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">{s.fullName?.charAt(0) ?? '?'}</div>
                         <div><p className="font-medium">{s.fullName}</p><p className="text-xs text-slate-500 lg:hidden">{s.email}</p></div>
                       </div>
                     </TableCell>
@@ -374,7 +374,7 @@ export function ManageStaff() {
           {selectedStaff && (
             <div className="space-y-6 py-4">
               <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="size-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-2xl font-bold">{selectedStaff.fullName.charAt(0)}</div>
+                <div className="size-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-2xl font-bold">{selectedStaff.fullName?.charAt(0) ?? '?'}</div>
                 <div>
                   <h3 className="text-xl font-bold">{selectedStaff.fullName}</h3>
                   <p className="text-sm text-slate-600">{selectedStaff.subjectHandled}</p>
