@@ -105,6 +105,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<Sale>()
             .ToTable(tb => tb.HasTrigger("dummy_trigger_marker")); // table has triggers — disable OUTPUT clause
 
+        mb.Entity<SubmissionReview>()
+            .ToTable("SubmissionReviews", tb => tb.HasTrigger("dummy_trigger_marker_sr")); // table has triggers
+
         // Notification
         mb.Entity<Notification>()
             .HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId);
