@@ -20,7 +20,7 @@ export function ManageSubmissions() {
   const [students, setStudents] = useState<StudentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [ratingFilter, setRatingFilter] = useState<RatingLevel | 'all'>('all');
+  const [ratingFilter, setRatingFilter] = useState<RatingLevel | 'all' | 'unrated'>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionDto | null>(null);
   const [ratingLevel, setRatingLevel] = useState<RatingLevel | ''>('');
   const [strengths, setStrengths] = useState('');
@@ -48,7 +48,9 @@ export function ManageSubmissions() {
       (s.title ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (student?.fullName ?? s.studentName ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (competition?.title ?? '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRating = ratingFilter === 'all' || s.review?.ratingLevel === ratingFilter;
+    const matchesRating =
+      ratingFilter === 'all' ||
+      (ratingFilter === 'unrated' ? !s.review : s.review?.ratingLevel === ratingFilter);
     return matchesSearch && matchesRating;
   });
 
@@ -121,9 +123,10 @@ export function ManageSubmissions() {
           <div className="flex items-center gap-2 mt-2">
             <Label>Filter by Rating</Label>
             <Select value={ratingFilter} onValueChange={(v: any) => setRatingFilter(v)}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Select rating" /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Select rating" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
+                <SelectItem value="unrated">⏳ Not Rated Yet</SelectItem>
                 <SelectItem value="Best">Best</SelectItem>
                 <SelectItem value="Better">Better</SelectItem>
                 <SelectItem value="Good">Good</SelectItem>

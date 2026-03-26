@@ -24,6 +24,8 @@ export function ManageExhibitions() {
   const [isExhibitionDialogOpen, setIsExhibitionDialogOpen] = useState(false);
   const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exhibitionStatusFilter, setExhibitionStatusFilter] = useState<string>('all');
+  const [artworkStatusFilter, setArtworkStatusFilter] = useState<string>('all');
   const [exhibitionForm, setExhibitionForm] = useState({ title: '', location: '', startDate: '', endDate: '' });
   const [submissionForm, setSubmissionForm] = useState({ submissionId: '', exhibitionId: '', proposedPrice: '' });
 
@@ -42,6 +44,14 @@ export function ManageExhibitions() {
 
   // All exhibition submissions flattened
   const allExhibitionSubmissions: ExhibitionSubmissionDto[] = exhibitions.flatMap(e => e.submissions);
+
+  const filteredExhibitions = exhibitionStatusFilter === 'all'
+    ? exhibitions
+    : exhibitions.filter(e => (e.status ?? '').toLowerCase() === exhibitionStatusFilter.toLowerCase());
+
+  const filteredArtworks = artworkStatusFilter === 'all'
+    ? allExhibitionSubmissions
+    : allExhibitionSubmissions.filter(es => es.status === artworkStatusFilter);
 
   // Best-rated submissions (have a 'Best' review)
   const bestSubmissions = allSubmissions.filter(s => s.review?.ratingLevel === 'Best');
@@ -115,7 +125,19 @@ export function ManageExhibitions() {
         </TabsList>
 
         <TabsContent value="exhibitions" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'Ongoing', 'Upcoming', 'Completed'] as const).map(s => (
+                <Button key={s} size="sm"
+                  variant={exhibitionStatusFilter === s ? 'default' : 'outline'}
+                  onClick={() => setExhibitionStatusFilter(s)}>
+                  {s === 'all' ? 'All' : s}
+                  <span className="ml-1.5 text-xs opacity-70">
+                    ({s === 'all' ? exhibitions.length : exhibitions.filter(e => (e.status ?? '') === s).length})
+                  </span>
+                </Button>
+              ))}
+            </div>
             <Dialog open={isExhibitionDialogOpen} onOpenChange={setIsExhibitionDialogOpen}>
               <DialogTrigger asChild>
                 <Button><Plus className="size-4 mr-2" />Add Exhibition</Button>
@@ -157,7 +179,7 @@ export function ManageExhibitions() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {exhibitions.map((exhibition) => {
+            {filteredExhibitions.map((exhibition) => {
               const artworkCount = exhibition.submissions.length;
               const thumbnails = exhibition.submissions.slice(0, 4);
               return (
@@ -214,7 +236,19 @@ export function ManageExhibitions() {
         </TabsContent>
 
         <TabsContent value="exhibited-works" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'Available', 'Sold', 'Returned'] as const).map(s => (
+                <Button key={s} size="sm"
+                  variant={artworkStatusFilter === s ? 'default' : 'outline'}
+                  onClick={() => setArtworkStatusFilter(s)}>
+                  {s === 'all' ? 'All' : s}
+                  <span className="ml-1.5 text-xs opacity-70">
+                    ({s === 'all' ? allExhibitionSubmissions.length : allExhibitionSubmissions.filter(es => es.status === s).length})
+                  </span>
+                </Button>
+              ))}
+            </div>
             <Dialog open={isSubmissionDialogOpen} onOpenChange={setIsSubmissionDialogOpen}>
               <DialogTrigger asChild>
                 <Button><Plus className="size-4 mr-2" />Add Artwork to Exhibition</Button>
@@ -272,7 +306,7 @@ export function ManageExhibitions() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allExhibitionSubmissions.map((es) => {
+            {filteredArtworks.map((es) => {
               const exhibition = exhibitions.find(e => e.id === es.exhibitionId);
               return (
                 <Card key={es.id} className="overflow-hidden">

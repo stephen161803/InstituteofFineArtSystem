@@ -48,6 +48,7 @@ export function ManageCompetitions() {
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'Ongoing' | 'Upcoming' | 'Completed'>('Ongoing');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<CompetitionDto | null>(null);
   const [formData, setFormData] = useState<FormData>(defaultForm);
@@ -74,8 +75,9 @@ export function ManageCompetitions() {
 
   const filteredCompetitions = competitions.filter(
     (c) =>
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+      c.status === statusFilter &&
+      (c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.description ?? '').toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -227,6 +229,22 @@ export function ManageCompetitions() {
         <CardHeader>
           <CardTitle>All Competitions</CardTitle>
           <CardDescription>Create and manage art competitions</CardDescription>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            {(['Ongoing', 'Upcoming', 'Completed'] as const).map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? 'default' : 'outline'}
+                onClick={() => setStatusFilter(s)}
+                className={statusFilter === s ? '' : 'text-slate-600'}
+              >
+                {s}
+                <span className="ml-1.5 text-xs opacity-70">
+                  ({competitions.filter(c => c.status === s).length})
+                </span>
+              </Button>
+            ))}
+          </div>
           <div className="flex items-center gap-2 mt-2">
             <Search className="size-4" />
             <Input

@@ -3,13 +3,19 @@ import { awardsApi, type AwardDto, type StudentAwardDto } from '../../api/awards
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
 import { competitionsApi, type CompetitionDto } from '../../api/competitions';
 import { usersApi, type StudentDto } from '../../api/users';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Plus, Trophy, Loader2 } from 'lucide-react';
+import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
+
+const AWARD_ICON: Record<string, string> = {
+  'First Prize': '🥇', 'Second Prize': '🥈', 'Third Prize': '🥉',
+  'Honorable Mention': '🏅', 'Best Use of Color': '🎨',
+};
 
 export function ManageAwards() {
   const [studentAwards, setStudentAwards] = useState<StudentAwardDto[]>([]);
@@ -21,6 +27,7 @@ export function ManageAwards() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({ competitionId: '', submissionId: '', awardId: '' });
+  const [filterCompetitionId, setFilterCompetitionId] = useState<string>('all');
 
   useEffect(() => {
     Promise.all([
@@ -42,6 +49,18 @@ export function ManageAwards() {
   const selectedCompetitionSubmissions = formData.competitionId
     ? submissions.filter(s => s.competitionId === Number(formData.competitionId))
     : [];
+
+  // Competitions that have at least one award
+  const competitionsWithAwards = competitions.filter(c =>
+    studentAwards.some(a => a.competitionTitle === c.title)
+  );
+
+  const filteredAwards = filterCompetitionId === 'all'
+    ? studentAwards
+    : studentAwards.filter(a => {
+        const comp = competitions.find(c => c.id === Number(filterCompetitionId));
+        return comp ? a.competitionTitle === comp.title : false;
+      });
 
   const resetForm = () => {
     setFormData({ competitionId: '', submissionId: '', awardId: '' });
@@ -150,34 +169,96 @@ export function ManageAwards() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {studentAwards.map((award) => (
-          <Card key={award.id}>
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="bg-yellow-100 p-3 rounded-full">
-                  <Trophy className="size-6 text-yellow-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">{award.awardName}</h3>
-                  <p className="text-sm text-slate-600 mb-1">Winner: <span className="font-medium">{award.studentName ?? '—'}</span></p>
-                  <p className="text-sm text-slate-600 mb-2">Competition: {award.competitionTitle ?? '—'}</p>
-                  <p className="text-xs text-slate-500">Awarded on {new Date(award.awardedDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Label className="shrink-0">Filter by Competition:</Label>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={filterCompetitionId === 'all' ? 'default' : 'outline'}
+            onClick={() => setFilterCompetitionId('all')}
+          >
+            All ({studentAwards.length})
+          </Button>
+          {competitionsWithAwards.map(c => (
+            <Button
+              key={c.id}
+              size="sm"
+              variant={filterCompetitionId === String(c.id) ? 'default' : 'outline'}
+              onClick={() => setFilterCompetitionId(String(c.id))}
+            >
+              {c.title}
+              <span className="ml-1.5 text-xs opacity-70">
+                ({studentAwards.filter(a => a.competitionTitle === c.title).length})
+              </span>
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {studentAwards.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Trophy className="size-12 mx-auto mb-4 text-slate-400" />
-            <h3 className="font-semibold mb-2">No Awards Issued Yet</h3>
-            <p className="text-slate-600">Start recognizing outstanding student work</p>
-          </CardContent>
-        </Card>
+      {/* Awards grouped by competition */}
+      {filterCompetitionId === 'all' ? (
+        competitionsWithAwards.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Trophy className="size-12 mx-auto mb-4 text-slate-400" />
+              <h3 className="font-semibold mb-2">No Awards Issued Yet</h3>
+              <p className="text-slate-600">Start recognizing outstanding student work</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {competitionsWithAwards.map(comp => {
+              const compAwards = studentAwards.filter(a => a.competitionTitle === comp.title);
+              return (
+                <Card key={comp.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Trophy className="size-4 text-yellow-600" />{comp.title}
+                      </CardTitle>
+                      <Badge variant="secondary">{compAwards.length} award{compAwards.length > 1 ? 's' : ''}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {compAwards.map(award => (
+                        <div key={award.id} className="flex items-center gap-3 p-3 border rounded-lg bg-yellow-50">
+                          <span className="text-2xl shrink-0">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">{award.awardName}</p>
+                            <p className="text-xs text-slate-600 truncate">{award.studentName ?? '—'}</p>
+                            <p className="text-xs text-slate-400">{new Date(award.awardedDate).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredAwards.map(award => (
+            <Card key={award.id}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl shrink-0">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>
+                  <div className="flex-1">
+                    <p className="font-semibold">{award.awardName}</p>
+                    <p className="text-sm text-slate-600">{award.studentName ?? '—'}</p>
+                    <p className="text-xs text-slate-400">{new Date(award.awardedDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {filteredAwards.length === 0 && (
+            <p className="text-slate-500 text-sm col-span-2 text-center py-8">No awards for this competition</p>
+          )}
+        </div>
       )}
     </div>
   );
