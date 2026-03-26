@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
-import { competitionsApi, type CompetitionDto } from '../../api/competitions';
+import { competitionsApi, type CompetitionDto, type CompetitionCriteriaDto } from '../../api/competitions';
 import { usersApi, type StudentDto } from '../../api/users';
 import { RatingLevel } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -9,10 +9,19 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Search, Star, Loader2 } from 'lucide-react';
+import { Search, Star, Loader2, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Tính rating level từ tổng điểm weighted
+function calcRatingFromScore(score: number): RatingLevel {
+  if (score >= 90) return 'Best';
+  if (score >= 80) return 'Better';
+  if (score >= 70) return 'Good';
+  if (score >= 60) return 'Moderate';
+  return 'Normal';
+}
 
 export function ManageSubmissions() {
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
@@ -26,6 +35,8 @@ export function ManageSubmissions() {
   const [strengths, setStrengths] = useState('');
   const [weaknesses, setWeaknesses] = useState('');
   const [improvements, setImprovements] = useState('');
+  const [criteriaScores, setCriteriaScores] = useState<Record<number, number>>({});
+  const [competitionCriteria, setCompetitionCriteria] = useState<CompetitionCriteriaDto[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -40,6 +51,18 @@ export function ManageSubmissions() {
     }).catch(() => toast.error('Failed to load submissions'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Tính tổng điểm weighted từ criteriaScores
+  const calcWeightedScore = (scores: Record<number, number>, criteria: CompetitionCriteriaDto[]) => {
+    if (criteria.length === 0) return 0;
+    return criteria.reduce((sum, c) => {
+      const score = scores[c.criteriaId] ?? 0;
+      return sum + (score * c.weightPercent / 100);
+    }, 0);
+  };
+
+  const weightedScore = calcWeightedScore(criteriaScores, competitionCriteria);
+  const autoRating = competitionCriteria.length > 0 ? calcRatingFromScore(weightedScore) : null;
 
   const filteredSubmissions = submissions.filter((s) => {
     const student = students.find(st => st.userId === s.studentId);
@@ -60,6 +83,36 @@ export function ManageSubmissions() {
     setStrengths(submission.review?.strengths ?? '');
     setWeaknesses(submission.review?.weaknesses ?? '');
     setImprovements(submission.review?.improvements ?? '');
+
+    // Load criteria của competition này
+    const comp = competitions.find(c => c.id === submission.competitionId);
+    const criteria = comp?.criteria ?? [];
+    setCompetitionCriteria(criteria);
+
+    // Điền điểm cũ nếu có
+    const existingScores: Record<number, number> = {};
+    if (submission.review?.gradeDetails) {
+      for (const g of submission.review.gradeDetails) {
+        existingScores[g.criteriaId] = g.rawScore;
+      }
+    } else {
+      // Default 0 cho tất cả criteria
+      for (const c of criteria) {
+        existingScores[c.criteriaId] = 0;
+      }
+    }
+    setCriteriaScores(existingScores);
+  };
+
+  const handleScoreChange = (criteriaId: number, value: number) => {
+    const clamped = Math.min(100, Math.max(0, value));
+    const newScores = { ...criteriaScores, [criteriaId]: clamped };
+    setCriteriaScores(newScores);
+    // Auto-update rating level nếu có criteria
+    if (competitionCriteria.length > 0) {
+      const score = calcWeightedScore(newScores, competitionCriteria);
+      setRatingLevel(calcRatingFromScore(score));
+    }
   };
 
   const handleSaveReview = async () => {
@@ -69,10 +122,14 @@ export function ManageSubmissions() {
     }
     setSaving(true);
     try {
+      const gradeDetails = competitionCriteria.map(c => ({
+        criteriaId: c.criteriaId,
+        rawScore: criteriaScores[c.criteriaId] ?? 0,
+      }));
       await submissionsApi.createReview(selectedSubmission.id, {
         ratingLevel, strengths, weaknesses, improvements,
+        gradeDetails,
       });
-      // Refresh submissions to get updated review
       const updated = await submissionsApi.getAll();
       setSubmissions(updated);
       toast.success('Review saved successfully');
@@ -152,6 +209,16 @@ export function ManageSubmissions() {
                     <h3 className="font-semibold mb-1">{submission.title}</h3>
                     <p className="text-sm text-slate-600 mb-1">By {student?.fullName ?? submission.studentName}</p>
                     <p className="text-xs text-slate-500 mb-2">{competition?.title}</p>
+                    {review?.gradeDetails && review.gradeDetails.length > 0 && (
+                      <div className="mb-2 space-y-1">
+                        {review.gradeDetails.map(g => (
+                          <div key={g.id} className="flex justify-between text-xs text-slate-500">
+                            <span>{g.criteriaName ?? g.criteriaCode}</span>
+                            <span className="font-medium">{g.rawScore}/100</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-3">
                       {review ? (
                         <Badge className={getRatingColor(review.ratingLevel)}>{review.ratingLevel}</Badge>
@@ -173,46 +240,121 @@ export function ManageSubmissions() {
 
       {/* Review Dialog */}
       <Dialog open={!!selectedSubmission} onOpenChange={() => setSelectedSubmission(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader><DialogTitle>Rate Submission</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Rate Submission</DialogTitle>
+            <DialogDescription>Evaluate and score this artwork</DialogDescription>
+          </DialogHeader>
           {selectedSubmission && (
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* Artwork preview */}
               <div className="flex gap-4">
                 {selectedSubmission.workUrl && (
-                  <img src={selectedSubmission.workUrl} alt={selectedSubmission.title ?? ''} className="w-48 h-48 object-cover rounded" />
+                  <img src={selectedSubmission.workUrl} alt={selectedSubmission.title ?? ''} className="w-40 h-40 object-cover rounded-lg shrink-0" />
                 )}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-lg mb-1">{selectedSubmission.title}</h3>
-                  <p className="text-sm text-slate-500">Proposed price: {selectedSubmission.proposedPrice.toLocaleString()} VND</p>
+                  <p className="text-sm text-slate-500 mb-1">
+                    By {students.find(s => s.userId === selectedSubmission.studentId)?.fullName ?? selectedSubmission.studentName}
+                  </p>
+                  <p className="text-sm text-slate-500 mb-1">
+                    {competitions.find(c => c.id === selectedSubmission.competitionId)?.title}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Proposed: {selectedSubmission.proposedPrice.toLocaleString()} VND
+                  </p>
                 </div>
               </div>
+
+              {/* Criteria scoring */}
+              {competitionCriteria.length > 0 && (
+                <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold flex items-center gap-1.5">
+                      <Calculator className="size-4" />Criteria Scoring
+                    </Label>
+                    {autoRating && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-500">Total:</span>
+                        <span className="font-bold text-slate-800">{weightedScore.toFixed(1)}/100</span>
+                        <Badge className={getRatingColor(autoRating)}>{autoRating}</Badge>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {competitionCriteria.map(c => (
+                      <div key={c.criteriaId} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">{c.criteriaName ?? c.criteriaCode}</span>
+                          <span className="text-slate-500 text-xs">Weight: {c.weightPercent}%</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={criteriaScores[c.criteriaId] ?? 0}
+                            onChange={e => handleScoreChange(c.criteriaId, Number(e.target.value))}
+                            className="flex-1 h-2 accent-purple-600"
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={criteriaScores[c.criteriaId] ?? 0}
+                            onChange={e => handleScoreChange(c.criteriaId, Number(e.target.value))}
+                            className="w-16 h-8 text-center text-sm"
+                          />
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-1.5">
+                          <div
+                            className="bg-purple-500 h-1.5 rounded-full transition-all"
+                            style={{ width: `${criteriaScores[c.criteriaId] ?? 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Rating is auto-calculated from scores. You can override it below.
+                  </p>
+                </div>
+              )}
+
+              {/* Rating level */}
               <div className="space-y-2">
                 <Label>Rating Level *</Label>
                 <Select value={ratingLevel} onValueChange={(v: any) => setRatingLevel(v)}>
                   <SelectTrigger><SelectValue placeholder="Select rating" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Best">Best</SelectItem>
-                    <SelectItem value="Better">Better</SelectItem>
-                    <SelectItem value="Good">Good</SelectItem>
-                    <SelectItem value="Moderate">Moderate</SelectItem>
-                    <SelectItem value="Normal">Normal</SelectItem>
+                    <SelectItem value="Best">Best (≥90)</SelectItem>
+                    <SelectItem value="Better">Better (≥80)</SelectItem>
+                    <SelectItem value="Good">Good (≥70)</SelectItem>
+                    <SelectItem value="Moderate">Moderate (≥60)</SelectItem>
+                    <SelectItem value="Normal">Normal (&lt;60)</SelectItem>
                     <SelectItem value="Disqualified">Disqualified</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Strengths</Label>
-                <Textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={2} placeholder="What did the student do well?" />
+
+              {/* Feedback */}
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-green-700">✅ Strengths</Label>
+                  <Textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={2} placeholder="What did the student do well?" className="border-green-200 focus:border-green-400" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-red-700">⚠️ Weaknesses</Label>
+                  <Textarea value={weaknesses} onChange={(e) => setWeaknesses(e.target.value)} rows={2} placeholder="Areas that need attention" className="border-red-200 focus:border-red-400" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-blue-700">💡 Improvements</Label>
+                  <Textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} rows={2} placeholder="Suggestions for improvement" className="border-blue-200 focus:border-blue-400" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Weaknesses</Label>
-                <Textarea value={weaknesses} onChange={(e) => setWeaknesses(e.target.value)} rows={2} placeholder="Areas that need attention" />
-              </div>
-              <div className="space-y-2">
-                <Label>Improvements</Label>
-                <Textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} rows={2} placeholder="Suggestions for improvement" />
-              </div>
-              <div className="flex justify-end gap-2">
+
+              <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setSelectedSubmission(null)}>Cancel</Button>
                 <Button onClick={handleSaveReview} disabled={saving}>
                   {saving && <Loader2 className="size-4 mr-2 animate-spin" />}
