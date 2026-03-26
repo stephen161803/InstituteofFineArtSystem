@@ -18,7 +18,7 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
     private int CurrentUserId =>
         int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 
-    private static SubmissionDto ToDto(Submission s) => new(
+    private static SubmissionDto ToDto(Submission s, IEnumerable<CompetitionCriteria>? compCriteria = null) => new(
         s.Id, s.CompetitionId, s.StudentId,
         s.Student?.FullName,
         s.Title, s.WorkUrl, s.FileName, s.ProposedPrice,
@@ -32,7 +32,8 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
             s.Review.GradeDetails.Select(g => new GradeDetailDto(
                 g.Id, g.ReviewId, g.CriteriaId,
                 g.Criteria?.CriteriaCode, g.Criteria?.CriteriaName,
-                g.RawScore, null)).ToList()
+                g.RawScore,
+                compCriteria?.FirstOrDefault(cc => cc.CriteriaId == g.CriteriaId)?.WeightPercent)).ToList()
         )
     );
 
@@ -52,7 +53,15 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
         if (role == "student" && CurrentUserIdOrNull.HasValue)
             q = q.Where(s => s.StudentId == CurrentUserIdOrNull.Value);
 
-        return Ok((await q.ToListAsync()).Select(ToDto));
+        var subs = await q.ToListAsync();
+
+        // Load CompetitionCriteria for all competitions in result
+        var compIds = subs.Select(s => s.CompetitionId).Distinct().ToList();
+        var allCriteria = await db.CompetitionCriteria
+            .Where(cc => compIds.Contains(cc.CompetitionId))
+            .ToListAsync();
+
+        return Ok(subs.Select(s => ToDto(s, allCriteria.Where(cc => cc.CompetitionId == s.CompetitionId))));
     }
 
     [HttpGet("{id}")]
@@ -63,7 +72,13 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
             .Include(s => s.Review).ThenInclude(r => r!.Staff)
             .Include(s => s.Review).ThenInclude(r => r!.GradeDetails).ThenInclude(g => g.Criteria)
             .FirstOrDefaultAsync(s => s.Id == id);
-        return s is null ? NotFound() : Ok(ToDto(s));
+        if (s is null) return NotFound();
+
+        var criteria = await db.CompetitionCriteria
+            .Where(cc => cc.CompetitionId == s.CompetitionId)
+            .ToListAsync();
+
+        return Ok(ToDto(s, criteria));
     }
 
     [HttpPost]
@@ -80,7 +95,8 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
         db.Submissions.Add(sub);
         await db.SaveChangesAsync();
         await db.Entry(sub).Reference(s => s.Student).LoadAsync();
-        return Ok(ToDto(sub));
+        var criteria = await db.CompetitionCriteria.Where(cc => cc.CompetitionId == sub.CompetitionId).ToListAsync();
+        return Ok(ToDto(sub, criteria));
     }
 
     [HttpPut("{id}")]
@@ -99,7 +115,8 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
 
         await db.Entry(sub).Reference(s => s.Student).LoadAsync();
         await db.Entry(sub).Reference(s => s.Review).LoadAsync();
-        return Ok(ToDto(sub));
+        var criteria2 = await db.CompetitionCriteria.Where(cc => cc.CompetitionId == sub.CompetitionId).ToListAsync();
+        return Ok(ToDto(sub, criteria2));
     }
 
     [HttpDelete("{id}")]
@@ -119,11 +136,16 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
     // ── REVIEWS ────────────────────────────────────────────────────────────
 
     [HttpPost("{id}/review")]
-    [Authorize(Roles = "Staff")]
+    [Authorize(Roles = "Staff,Manager")]
     public async Task<IActionResult> CreateReview(int id, [FromBody] CreateReviewRequest req)
     {
         var sub = await db.Submissions.FindAsync(id);
         if (sub is null) return NotFound();
+
+        // Load CompetitionCriteria để validate và lấy weightPercent
+        var compCriteria = await db.CompetitionCriteria
+            .Where(cc => cc.CompetitionId == sub.CompetitionId)
+            .ToListAsync();
 
         var existing = await db.SubmissionReviews.FirstOrDefaultAsync(r => r.SubmissionId == id);
         if (existing is not null)
@@ -146,6 +168,7 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
                 SubmissionId = id, StaffId = CurrentUserId,
                 RatingLevel = req.RatingLevel, Strengths = req.Strengths,
                 Weaknesses = req.Weaknesses, Improvements = req.Improvements,
+                ReviewedAt = DateTimeOffset.UtcNow,
             };
             db.SubmissionReviews.Add(review);
             await db.SaveChangesAsync();
