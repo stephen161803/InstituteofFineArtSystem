@@ -29,6 +29,7 @@ export function ManageSubmissions() {
   const [students, setStudents] = useState<StudentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [competitionFilter, setCompetitionFilter] = useState<string>('all');
   const [ratingFilter, setRatingFilter] = useState<RatingLevel | 'all' | 'unrated'>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionDto | null>(null);
   const [ratingLevel, setRatingLevel] = useState<RatingLevel | ''>('');
@@ -71,10 +72,11 @@ export function ManageSubmissions() {
       (s.title ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (student?.fullName ?? s.studentName ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (competition?.title ?? '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCompetition = competitionFilter === 'all' || s.competitionId === Number(competitionFilter);
     const matchesRating =
       ratingFilter === 'all' ||
       (ratingFilter === 'unrated' ? !s.review : s.review?.ratingLevel === ratingFilter);
-    return matchesSearch && matchesRating;
+    return matchesSearch && matchesCompetition && matchesRating;
   });
 
   const openReviewDialog = (submission: SubmissionDto) => {
@@ -178,7 +180,19 @@ export function ManageSubmissions() {
               onChange={(e) => setSearchQuery(e.target.value)} className="max-w-sm" />
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <Label>Filter by Rating</Label>
+            <Label>Competition</Label>
+            <Select value={competitionFilter} onValueChange={setCompetitionFilter}>
+              <SelectTrigger className="w-56"><SelectValue placeholder="All competitions" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Competitions</SelectItem>
+                {competitions.map(c => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <Label>Rating</Label>
             <Select value={ratingFilter} onValueChange={(v: any) => setRatingFilter(v)}>
               <SelectTrigger className="w-44"><SelectValue placeholder="Select rating" /></SelectTrigger>
               <SelectContent>
