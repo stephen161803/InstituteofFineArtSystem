@@ -25,11 +25,11 @@ import { ViewCompetitions } from './components/pages/ViewCompetitions';
 import { StudentCompetitionDetail } from './components/pages/StudentCompetitionDetail';
 import { StatisticsReport } from './components/pages/StatisticsReport';
 import { ViewStudents } from './components/pages/ViewStudents';
+import { ManageCustomers } from './components/pages/ManageCustomers';
 import { ArtworkDetail } from './components/pages/ArtworkDetail';
 import { EditProfilePage } from './components/pages/EditProfilePage';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { awardsApi, StudentAwardDto } from './api/awards';
-import { toast } from 'sonner';
 
 // Simple protected route wrapper
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
@@ -119,6 +119,10 @@ export const router = createBrowserRouter([
       {
         path: 'students',
         element: <ProtectedRoute allowedRoles={['admin']}><ManageStudents /></ProtectedRoute>,
+      },
+      {
+        path: 'customers',
+        element: <ProtectedRoute allowedRoles={['admin']}><ManageCustomers /></ProtectedRoute>,
       },
       // Staff routes
       {

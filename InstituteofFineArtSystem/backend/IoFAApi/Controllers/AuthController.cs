@@ -34,8 +34,8 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
         if (await db.Users.AnyAsync(u => u.Username == req.Username))
             return BadRequest(new { message = "Username already taken" });
 
-        var studentRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == "Student");
-        if (studentRole is null) return StatusCode(500, "Student role not found");
+        var customerRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == "Customer");
+        if (customerRole is null) return StatusCode(500, "Customer role not found");
 
         var user = new User
         {
@@ -44,14 +44,13 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
             FullName = req.FullName,
             Email = req.Email,
             Phone = req.Phone,
-            RoleId = studentRole.Id,
+            RoleId = customerRole.Id,
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        // Create student record
-        var admissionNumber = $"A{user.Id:D3}";
-        db.Students.Add(new Student { UserId = user.Id, AdmissionNumber = admissionNumber });
+        // Create customer record
+        db.Customers.Add(new Customer { UserId = user.Id });
         await db.SaveChangesAsync();
 
         // Reload with role

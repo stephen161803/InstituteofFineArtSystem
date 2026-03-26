@@ -159,4 +159,48 @@ public class UsersController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return Ok(new { message = "Deactivated" });
     }
+
+    // ── CUSTOMERS ──────────────────────────────────────────────────────────
+
+    [HttpGet("customers")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetCustomers()
+    {
+        var list = await db.Customers
+            .Include(c => c.User)
+            .Where(c => c.User.IsActive == true)
+            .Select(c => new CustomerDto(
+                c.Id, c.UserId, c.User.FullName, c.User.Email, c.User.Phone,
+                c.Address, c.Notes,
+                c.CreatedAt.ToString("yyyy-MM-dd")))
+            .ToListAsync();
+        return Ok(list);
+    }
+
+    [HttpPut("customers/{customerId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateCustomer(int customerId, [FromBody] UpdateCustomerRequest req)
+    {
+        var customer = await db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == customerId);
+        if (customer is null) return NotFound();
+
+        customer.User.FullName = req.FullName;
+        customer.User.Email = req.Email;
+        customer.User.Phone = req.Phone;
+        customer.Address = req.Address;
+        customer.Notes = req.Notes;
+        await db.SaveChangesAsync();
+        return Ok(new { message = "Updated" });
+    }
+
+    [HttpDelete("customers/{customerId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteCustomer(int customerId)
+    {
+        var customer = await db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == customerId);
+        if (customer is null) return NotFound();
+        customer.User.IsActive = false;
+        await db.SaveChangesAsync();
+        return Ok(new { message = "Deactivated" });
+    }
 }

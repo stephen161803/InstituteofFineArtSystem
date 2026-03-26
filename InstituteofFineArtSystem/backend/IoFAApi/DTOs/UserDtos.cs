@@ -84,3 +84,22 @@ public record UpdateStudentRequest(
     string? DateOfBirth,
     string? Address
 );
+
+public record CustomerDto(
+    int Id,
+    int UserId,
+    string FullName,
+    string? Email,
+    string? Phone,
+    string? Address,
+    string? Notes,
+    string? CreatedAt
+);
+
+public record UpdateCustomerRequest(
+    string FullName,
+    string? Email,
+    string? Phone,
+    string? Address,
+    string? Notes
+);

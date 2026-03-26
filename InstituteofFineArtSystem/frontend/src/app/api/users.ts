@@ -21,6 +21,17 @@ export interface StudentDto {
   address?: string;
 }
 
+export interface CustomerDto {
+  id: number;
+  userId: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
 export const usersApi = {
   getStaff: () => api.get<StaffDto[]>('/users/staff'),
   createStaff: (data: unknown) => api.post('/users/staff', data),
@@ -31,4 +42,8 @@ export const usersApi = {
   createStudent: (data: unknown) => api.post('/users/students', data),
   updateStudent: (userId: number, data: unknown) => api.put(`/users/students/${userId}`, data),
   deleteStudent: (userId: number) => api.delete(`/users/students/${userId}`),
+
+  getCustomers: () => api.get<CustomerDto[]>('/users/customers'),
+  updateCustomer: (customerId: number, data: unknown) => api.put(`/users/customers/${customerId}`, data),
+  deleteCustomer: (customerId: number) => api.delete(`/users/customers/${customerId}`),
 };
