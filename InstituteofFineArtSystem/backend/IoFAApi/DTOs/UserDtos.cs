@@ -111,7 +111,7 @@ public record AdminUserDto(
     string? Email,
     string? Phone,
     string Role,
-    string? CreatedAt
+    string CreatedAt
 );
 
 public record CreateAdminUserRequest(

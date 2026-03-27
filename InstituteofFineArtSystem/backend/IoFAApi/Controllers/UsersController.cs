@@ -205,7 +205,7 @@ public class UsersController(AppDbContext db) : ControllerBase
             .Select(u => new AdminUserDto(
                 u.Id, u.Username, u.FullName, u.Email, u.Phone,
                 u.Role.RoleName,
-                u.CreatedAt.HasValue ? u.CreatedAt.Value.ToString("yyyy-MM-dd") : null))
+                u.CreatedAt.ToString("yyyy-MM-dd")))
             .ToListAsync();
         return Ok(list);
     }
