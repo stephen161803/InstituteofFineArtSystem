@@ -25,6 +25,8 @@ import { ViewCompetitions } from './components/pages/ViewCompetitions';
 import { StudentCompetitionDetail } from './components/pages/StudentCompetitionDetail';
 import { StatisticsReport } from './components/pages/StatisticsReport';
 import { ViewStudents } from './components/pages/ViewStudents';
+import { AboutPage } from './components/AboutPage';
+import { ContactPage } from './components/ContactPage';
 import { ManageCustomers } from './components/pages/ManageCustomers';
 import { ManageAdminUsers } from './components/pages/ManageAdminUsers';
 import { ArtworkDetail } from './components/pages/ArtworkDetail';
@@ -87,6 +89,14 @@ export const router = createBrowserRouter([
   {
     path: '/exhibitions',
     element: <ExhibitionPage />,
+  },
+  {
+    path: '/about',
+    element: <AboutPage />,
+  },
+  {
+    path: '/contact',
+    element: <ContactPage />,
   },
   {
     path: '/exhibitions/:id',

@@ -181,6 +181,8 @@ export function HomePage() {
             <nav className="flex items-center gap-2 sm:gap-4 md:gap-6">
               <Link to="/" className="hidden md:block text-sm text-[#0a0a0a] hover:text-[#9810fa]">Home</Link>
               <Link to="/exhibitions" className="hidden md:block text-sm text-[#0a0a0a] hover:text-[#9810fa]">Exhibitions</Link>
+              <Link to="/about" className="hidden md:block text-sm text-[#0a0a0a] hover:text-[#9810fa]">About</Link>
+              <Link to="/contact" className="hidden md:block text-sm text-[#0a0a0a] hover:text-[#9810fa]">Contact</Link>
               {isAuthenticated && currentUser ? (
                 <>
                   {/* Notification Bell */}
