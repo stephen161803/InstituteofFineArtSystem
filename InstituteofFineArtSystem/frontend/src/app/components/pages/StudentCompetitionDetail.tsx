@@ -86,6 +86,7 @@ export function StudentCompetitionDetail() {
   };
 
   const isCompetitionOpen = competition.status === 'Ongoing' && new Date() <= new Date(competition.endDate);
+  const isStudent = currentUser?.role === 'student';
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, target: 'new' | 'edit') => {
     const file = e.target.files?.[0];
@@ -261,7 +262,7 @@ export function StudentCompetitionDetail() {
       </div>
 
       {/* Submit Artwork Section */}
-      {isCompetitionOpen && (
+      {isCompetitionOpen && isStudent && (
         <Card className="border-2 border-purple-200 bg-purple-50/50">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -428,7 +429,7 @@ export function StudentCompetitionDetail() {
                       <Badge variant="secondary">Submitted</Badge>
                       <span className="text-xs text-slate-500">{new Date(submission.submittedAt).toLocaleDateString('en-US')}</span>
                     </div>
-                    {isCompetitionOpen && (
+                    {isCompetitionOpen && isStudent && (
                       <Button size="sm" variant="outline" className="w-full" onClick={() => setEditingSubmission({ ...submission })}>
                         <Edit className="size-3 mr-1" />Edit
                       </Button>

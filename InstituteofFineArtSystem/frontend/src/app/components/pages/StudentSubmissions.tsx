@@ -94,6 +94,7 @@ export function StudentSubmissions() {
     .filter((g) => g.submissions.length > 0);
 
   const canEdit = (sub: SubmissionDto) => {
+    if (currentUser?.role !== 'student') return false;
     const comp = competitions.find((c) => c.id === sub.competitionId);
     return comp ? new Date() <= new Date(comp.endDate) : false;
   };
