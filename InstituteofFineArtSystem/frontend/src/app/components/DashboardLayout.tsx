@@ -88,6 +88,7 @@ export function DashboardLayout() {
           { label: 'Manage Staff', path: '/dashboard/staff', icon: Users },
           { label: 'Manage Students', path: '/dashboard/students', icon: Users },
           { label: 'Manage Customers', path: '/dashboard/customers', icon: Users },
+          { label: 'Admins & Managers', path: '/dashboard/admin-users', icon: Users },
         ];
       case 'staff':
         return [

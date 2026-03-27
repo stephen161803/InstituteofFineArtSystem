@@ -193,13 +193,59 @@ public class UsersController(AppDbContext db) : ControllerBase
         return Ok(new { message = "Updated" });
     }
 
-    [HttpDelete("customers/{customerId}")]
+    // ── ADMIN / MANAGER USERS ─────────────────────────────────────────────
+
+    [HttpGet("admins")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> DeleteCustomer(int customerId)
+    public async Task<IActionResult> GetAdminUsers()
     {
-        var customer = await db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == customerId);
-        if (customer is null) return NotFound();
-        customer.User.IsActive = false;
+        var list = await db.Users
+            .Include(u => u.Role)
+            .Where(u => (u.Role.RoleName == "Admin" || u.Role.RoleName == "Manager") && u.IsActive == true)
+            .Select(u => new AdminUserDto(
+                u.Id, u.Username, u.FullName, u.Email, u.Phone,
+                u.Role.RoleName,
+                u.CreatedAt.HasValue ? u.CreatedAt.Value.ToString("yyyy-MM-dd") : null))
+            .ToListAsync();
+        return Ok(list);
+    }
+
+    [HttpPost("admins")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateAdminUser([FromBody] CreateAdminUserRequest req)
+    {
+        if (req.Role != "Admin" && req.Role != "Manager")
+            return BadRequest(new { message = "Role must be Admin or Manager" });
+
+        if (await db.Users.AnyAsync(u => u.Username == req.Username))
+            return BadRequest(new { message = "Username already taken" });
+
+        var role = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == req.Role);
+        if (role is null) return BadRequest(new { message = $"Role '{req.Role}' not found" });
+
+        var user = new User
+        {
+            Username = req.Username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
+            FullName = req.FullName, Email = req.Email, Phone = req.Phone,
+            RoleId = role.Id,
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return Ok(new { message = $"{req.Role} created", userId = user.Id });
+    }
+
+    [HttpDelete("admins/{userId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteAdminUser(int userId)
+    {
+        var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        if (userId == currentUserId)
+            return BadRequest(new { message = "Cannot deactivate your own account" });
+
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+        user.IsActive = false;
         await db.SaveChangesAsync();
         return Ok(new { message = "Deactivated" });
     }

@@ -26,6 +26,7 @@ import { StudentCompetitionDetail } from './components/pages/StudentCompetitionD
 import { StatisticsReport } from './components/pages/StatisticsReport';
 import { ViewStudents } from './components/pages/ViewStudents';
 import { ManageCustomers } from './components/pages/ManageCustomers';
+import { ManageAdminUsers } from './components/pages/ManageAdminUsers';
 import { ArtworkDetail } from './components/pages/ArtworkDetail';
 import { EditProfilePage } from './components/pages/EditProfilePage';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -123,6 +124,10 @@ export const router = createBrowserRouter([
       {
         path: 'customers',
         element: <ProtectedRoute allowedRoles={['admin']}><ManageCustomers /></ProtectedRoute>,
+      },
+      {
+        path: 'admin-users',
+        element: <ProtectedRoute allowedRoles={['admin']}><ManageAdminUsers /></ProtectedRoute>,
       },
       // Staff routes
       {

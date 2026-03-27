@@ -103,3 +103,22 @@ public record UpdateCustomerRequest(
     string? Address,
     string? Notes
 );
+
+public record AdminUserDto(
+    int Id,
+    string Username,
+    string FullName,
+    string? Email,
+    string? Phone,
+    string Role,
+    string? CreatedAt
+);
+
+public record CreateAdminUserRequest(
+    string Username,
+    string Password,
+    string FullName,
+    string? Email,
+    string? Phone,
+    string Role  // "Admin" or "Manager"
+);

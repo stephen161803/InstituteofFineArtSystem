@@ -32,6 +32,16 @@ export interface CustomerDto {
   createdAt?: string;
 }
 
+export interface AdminUserDto {
+  id: number;
+  username: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  role: string;
+  createdAt?: string;
+}
+
 export const usersApi = {
   getStaff: () => api.get<StaffDto[]>('/users/staff'),
   createStaff: (data: unknown) => api.post('/users/staff', data),
@@ -46,4 +56,8 @@ export const usersApi = {
   getCustomers: () => api.get<CustomerDto[]>('/users/customers'),
   updateCustomer: (customerId: number, data: unknown) => api.put(`/users/customers/${customerId}`, data),
   deleteCustomer: (customerId: number) => api.delete(`/users/customers/${customerId}`),
+
+  getAdminUsers: () => api.get<AdminUserDto[]>('/users/admins'),
+  createAdminUser: (data: unknown) => api.post('/users/admins', data),
+  deleteAdminUser: (userId: number) => api.delete(`/users/admins/${userId}`),
 };
