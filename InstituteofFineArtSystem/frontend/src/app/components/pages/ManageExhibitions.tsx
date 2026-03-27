@@ -26,7 +26,7 @@ export function ManageExhibitions() {
   const [saving, setSaving] = useState(false);
   const [exhibitionStatusFilter, setExhibitionStatusFilter] = useState<string>('all');
   const [artworkStatusFilter, setArtworkStatusFilter] = useState<string>('all');
-  const [exhibitionForm, setExhibitionForm] = useState({ title: '', location: '', startDate: '', endDate: '' });
+  const [exhibitionForm, setExhibitionForm] = useState({ title: '', location: '', startDate: '', endDate: '', status: 'Upcoming' });
   const [submissionForm, setSubmissionForm] = useState({ submissionId: '', exhibitionId: '', proposedPrice: '' });
 
   useEffect(() => {
@@ -65,11 +65,12 @@ export function ManageExhibitions() {
         location: exhibitionForm.location || undefined,
         startDate: exhibitionForm.startDate || undefined,
         endDate: exhibitionForm.endDate || undefined,
+        status: exhibitionForm.status,
       });
       const updated = await exhibitionsApi.getAll();
       setExhibitions(updated);
       toast.success('Exhibition added successfully');
-      setExhibitionForm({ title: '', location: '', startDate: '', endDate: '' });
+      setExhibitionForm({ title: '', location: '', startDate: '', endDate: '', status: 'Upcoming' });
       setIsExhibitionDialogOpen(false);
     } catch (err: any) {
       toast.error(err.message ?? 'Failed to add exhibition');
@@ -165,6 +166,17 @@ export function ManageExhibitions() {
                       <Label>End Date</Label>
                       <Input type="date" value={exhibitionForm.endDate} onChange={(e) => setExhibitionForm({ ...exhibitionForm, endDate: e.target.value })} />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status *</Label>
+                    <Select value={exhibitionForm.status} onValueChange={v => setExhibitionForm({ ...exhibitionForm, status: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Upcoming">Upcoming</SelectItem>
+                        <SelectItem value="Ongoing">Ongoing</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setIsExhibitionDialogOpen(false)}>Cancel</Button>

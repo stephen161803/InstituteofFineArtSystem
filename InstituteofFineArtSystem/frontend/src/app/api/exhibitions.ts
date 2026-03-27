@@ -30,7 +30,7 @@ export interface ExhibitionDto {
   location?: string;
   startDate?: string;
   endDate?: string;
-  status: 'Planned' | 'Ongoing' | 'Completed';
+  status: 'Planned' | 'Upcoming' | 'Ongoing' | 'Completed' | string;
   submissions: ExhibitionSubmissionDto[];
 }
 
