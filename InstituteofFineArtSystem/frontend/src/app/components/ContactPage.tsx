@@ -75,13 +75,26 @@ export function ContactPage() {
                 ))}
               </div>
 
-              {/* Map placeholder */}
-              <div className="rounded-[14px] overflow-hidden border border-[rgba(0,0,0,0.1)] h-48 bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-                <div className="text-center text-slate-400">
-                  <MapPin className="size-10 mx-auto mb-2" />
-                  <p className="text-sm">123 Art Boulevard, New York</p>
-                </div>
+              {/* Map embed - OpenStreetMap (no API key needed) */}
+              <div className="rounded-[14px] overflow-hidden border border-[rgba(0,0,0,0.1)] h-48">
+                <iframe
+                  title="Institute of Fine Arts Location"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=-74.0060%2C40.7128%2C-73.9960%2C40.7228&layer=mapnik&marker=40.7178%2C-74.0010"
+                />
               </div>
+              <a
+                href="https://www.openstreetmap.org/?mlat=40.7178&mlon=-74.0010#map=15/40.7178/-74.0010"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#9810fa] hover:underline"
+              >
+                View larger map ↗
+              </a>
             </div>
 
             {/* Contact Form */}
