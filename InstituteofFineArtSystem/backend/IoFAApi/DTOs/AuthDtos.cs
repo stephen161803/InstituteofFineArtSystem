@@ -19,5 +19,8 @@ public record AuthResponse(
     string? Email,
     string? Phone,
     string? AvatarUrl,
-    string? Address = null
+    string? Address = null,
+    string? RefreshToken = null
 );
+
+public record RefreshTokenRequest(string RefreshToken);

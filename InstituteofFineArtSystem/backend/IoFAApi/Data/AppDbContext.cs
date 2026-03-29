@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ExhibitionSubmission> ExhibitionSubmissions => Set<ExhibitionSubmission>();
     public DbSet<Sale> Sales => Set<Sale>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -111,6 +112,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Notification
         mb.Entity<Notification>()
             .HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId);
+
+        // RefreshToken
+        mb.Entity<RefreshToken>()
+            .HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId);
 
         // Map table names to match SQL schema
         mb.Entity<Staff>().ToTable("Staffs");

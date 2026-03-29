@@ -10,6 +10,7 @@ export interface AuthResponse {
   phone?: string;
   avatarUrl?: string;
   address?: string;
+  refreshToken?: string;
 }
 
 export const authApi = {
@@ -20,6 +21,12 @@ export const authApi = {
     api.post<AuthResponse>('/auth/register', data),
 
   me: () => api.get<AuthResponse>('/auth/me'),
+
+  refresh: (refreshToken: string) =>
+    api.post<AuthResponse>('/auth/refresh', { refreshToken }),
+
+  logout: (refreshToken: string) =>
+    api.post('/auth/logout', { refreshToken }),
 
   updateProfile: (data: {
     fullName: string;

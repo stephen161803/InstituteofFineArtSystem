@@ -173,12 +173,27 @@ JOIN CompetitionCriteria cc
 GROUP BY sr.SubmissionId;
 
 GO
-/****** Object:  Table [dbo].[Notifications]    Script Date: 23/03/2026 1:29:14 CH ******/
+/****** Object:  Table [dbo].[RefreshTokens] ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[Notifications](
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'RefreshTokens')
+CREATE TABLE [dbo].[RefreshTokens](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [int] NOT NULL,
+	[Token] [nvarchar](500) NOT NULL,
+	[ExpiresAt] [datetimeoffset](7) NOT NULL,
+	[IsRevoked] [bit] NOT NULL DEFAULT 0,
+	[CreatedAt] [datetimeoffset](7) NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+PRIMARY KEY CLUSTERED ([Id] ASC)
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Notifications]    Script Date: 23/03/2026 1:29:14 CH ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GOCREATE TABLE [dbo].[Notifications](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[UserId] [int] NOT NULL,
 	[Type] [varchar](20) NOT NULL,

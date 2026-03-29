@@ -74,20 +74,17 @@ export function RegisterPage() {
     if (!validateForm()) { toast.error('Please fix the errors in the form'); return; }
     setLoading(true);
     try {
-      const success = await login(formData.username, formData.password);
-      // If login fails it means we need to register first — but login() calls the API
-      // For registration, call register then auto-login
-      if (!success) {
-        // Try register via API
-        const { authApi } = await import('../api/auth');
-        await authApi.register({
-          username: formData.username,
-          password: formData.password,
-          fullName: formData.fullName,
-          email: formData.email,
-        });
-        await login(formData.username, formData.password);
+      const { authApi } = await import('../api/auth');
+      const regRes = await authApi.register({
+        username: formData.username,
+        password: formData.password,
+        fullName: formData.fullName,
+        email: formData.email,
+      });
+      if (regRes.refreshToken) {
+        localStorage.setItem('refreshToken', regRes.refreshToken);
       }
+      await login(formData.username, formData.password);
       toast.success('Registration successful! Welcome aboard!');
       const intendedPurchase = sessionStorage.getItem('intendedPurchase');
       if (intendedPurchase) {

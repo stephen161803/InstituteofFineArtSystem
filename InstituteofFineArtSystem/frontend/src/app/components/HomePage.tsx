@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useAuth } from '../context/AuthContext';
+import { NotificationDetailDialog } from './NotificationDetailDialog';
 import svgPaths from '../../imports/svg-dh8fahrk4q';
 import { Trophy, Users, Upload, FileText, Calendar, ArrowRight, LayoutDashboard, LogOut, BarChart3, UserCog, Bell } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ export function HomePage() {
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [studentAwards, setStudentAwards] = useState<StudentAwardDto[]>([]);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+  const [detailNotification, setDetailNotification] = useState<NotificationDto | null>(null);
 
   useEffect(() => {
     competitionsApi.getAll().then((r) => setCompetitions(r ?? [])).catch(() => {});
