@@ -82,13 +82,29 @@ export function PurchaseForm() {
       return;
     }
 
+    const newAddress = formData.address && formData.city
+      ? `${formData.address}, ${formData.city}`
+      : formData.address || undefined;
+
+    const oldAddress = currentUser?.address;
+    let addressToSave = newAddress;
+
+    // Nếu có địa chỉ cũ và địa chỉ mới khác → hỏi user
+    if (oldAddress && newAddress && newAddress !== oldAddress) {
+      const confirmUpdate = window.confirm(
+        `Your saved address is:\n"${oldAddress}"\n\nYou entered a new address:\n"${newAddress}"\n\nDo you want to update your saved address?`
+      );
+      if (!confirmUpdate) {
+        // Giữ địa chỉ cũ, không cập nhật DB
+        addressToSave = undefined;
+      }
+    }
+
     try {
       await exhibitionsApi.purchase({
         exhibitionSubmissionId: artworkData.exhibitionSubmissionId,
         soldPrice: offeredPrice,
-        address: formData.address && formData.city
-          ? `${formData.address}, ${formData.city}`
-          : formData.address || undefined,
+        address: addressToSave,
       });
 
       toast.success('Purchase request submitted successfully! We will contact you soon.');
