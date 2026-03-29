@@ -193,7 +193,8 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GOCREATE TABLE [dbo].[Notifications](
+GO
+CREATE TABLE [dbo].[Notifications](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[UserId] [int] NOT NULL,
 	[Type] [varchar](20) NOT NULL,
@@ -1305,4 +1306,13 @@ GO
 USE [master]
 GO
 ALTER DATABASE [FineArtsInstitute_Final] SET  READ_WRITE 
+GO
+
+-- RefreshTokens FK and index
+IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_RefreshTokens_Users')
+ALTER TABLE [dbo].[RefreshTokens] WITH CHECK ADD CONSTRAINT [FK_RefreshTokens_Users] FOREIGN KEY([UserId])
+REFERENCES [dbo].[Users] ([Id])
+GO
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_RefreshTokens_Token' AND object_id = OBJECT_ID('RefreshTokens'))
+CREATE NONCLUSTERED INDEX [IX_RefreshTokens_Token] ON [dbo].[RefreshTokens] ([Token] ASC)
 GO
