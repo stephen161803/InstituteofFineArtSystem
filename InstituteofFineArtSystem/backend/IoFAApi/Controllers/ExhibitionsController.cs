@@ -141,9 +141,14 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
         var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
         if (customer is null)
         {
-            customer = new Customer { UserId = user.Id };
+            customer = new Customer { UserId = user.Id, Address = req.Address };
             db.Customers.Add(customer);
             await db.SaveChangesAsync();
+        }
+        else if (!string.IsNullOrWhiteSpace(req.Address))
+        {
+            // Update address if provided
+            customer.Address = req.Address;
         }
 
         var es = await db.ExhibitionSubmissions.FindAsync(req.ExhibitionSubmissionId);

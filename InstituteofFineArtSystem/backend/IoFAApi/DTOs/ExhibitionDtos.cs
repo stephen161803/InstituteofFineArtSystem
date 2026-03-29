@@ -54,4 +54,4 @@ public record AddExhibitionSubmissionRequest(int SubmissionId, decimal ProposedP
 
 public record CreateSaleRequest(int ExhibitionSubmissionId, int CustomerId, decimal SoldPrice);
 
-public record CustomerPurchaseRequest(int ExhibitionSubmissionId, decimal SoldPrice);
+public record CustomerPurchaseRequest(int ExhibitionSubmissionId, decimal SoldPrice, string? Address = null);

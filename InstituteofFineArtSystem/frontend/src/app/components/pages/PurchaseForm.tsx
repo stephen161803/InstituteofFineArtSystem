@@ -86,6 +86,9 @@ export function PurchaseForm() {
       await exhibitionsApi.purchase({
         exhibitionSubmissionId: artworkData.exhibitionSubmissionId,
         soldPrice: offeredPrice,
+        address: formData.address && formData.city
+          ? `${formData.address}, ${formData.city}`
+          : formData.address || undefined,
       });
 
       toast.success('Purchase request submitted successfully! We will contact you soon.');
