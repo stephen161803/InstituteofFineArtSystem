@@ -103,8 +103,18 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Delete(int id)
     {
-        var comp = await db.Competitions.FindAsync(id);
+        var comp = await db.Competitions
+            .Include(c => c.CompetitionCriteria)
+            .Include(c => c.Submissions)
+            .FirstOrDefaultAsync(c => c.Id == id);
         if (comp is null) return NotFound();
+
+        // Check if has submissions — prevent delete if so
+        if (comp.Submissions.Any())
+            return BadRequest(new { message = $"Cannot delete: this competition has {comp.Submissions.Count} submission(s). Remove submissions first." });
+
+        // Remove criteria first
+        db.CompetitionCriteria.RemoveRange(comp.CompetitionCriteria);
         db.Competitions.Remove(comp);
         await db.SaveChangesAsync();
         return Ok(new { message = "Deleted" });
