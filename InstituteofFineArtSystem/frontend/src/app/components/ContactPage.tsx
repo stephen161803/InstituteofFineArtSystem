@@ -60,7 +60,7 @@ export function ContactPage() {
                 {[
                   { icon: MapPin, label: 'Address', value: '123 Art Boulevard, Creative District\nNew York, NY 10001' },
                   { icon: Phone, label: 'Phone', value: '+1 (555) 123-4567' },
-                  { icon: Mail, label: 'Email', value: 'info@instituteoffineart.edu' },
+                  { icon: Mail, label: 'Email', value: 'instituteoffineartsmail@gmail.com' },
                   { icon: Clock, label: 'Office Hours', value: 'Mon – Fri: 9:00 AM – 5:00 PM\nSat: 10:00 AM – 2:00 PM' },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex gap-4">

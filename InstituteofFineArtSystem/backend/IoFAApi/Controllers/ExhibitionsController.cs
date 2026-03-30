@@ -64,6 +64,8 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
         };
         db.Exhibitions.Add(ex);
         await db.SaveChangesAsync();
+        // Reload with empty collections to avoid null ref in ToDto
+        ex.ExhibitionSubmissions = [];
         return Ok(ToDto(ex));
     }
 
@@ -95,6 +97,20 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Staff,Manager,Admin")]
     public async Task<IActionResult> AddSubmission(int id, [FromBody] AddExhibitionSubmissionRequest req)
     {
+        // Validate exhibition exists
+        var exhibition = await db.Exhibitions.FindAsync(id);
+        if (exhibition is null) return NotFound(new { message = "Exhibition not found" });
+
+        // Validate submission exists
+        var submission = await db.Submissions.FindAsync(req.SubmissionId);
+        if (submission is null) return NotFound(new { message = "Submission not found" });
+
+        // Check if already added to this exhibition
+        var existing = await db.ExhibitionSubmissions
+            .FirstOrDefaultAsync(es => es.ExhibitionId == id && es.SubmissionId == req.SubmissionId);
+        if (existing is not null)
+            return BadRequest(new { message = "This artwork is already in this exhibition" });
+
         var es = new ExhibitionSubmission
             { ExhibitionId = id, SubmissionId = req.SubmissionId, ProposedPrice = req.ProposedPrice };
         db.ExhibitionSubmissions.Add(es);

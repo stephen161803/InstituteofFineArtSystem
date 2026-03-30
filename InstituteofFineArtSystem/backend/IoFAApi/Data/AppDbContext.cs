@@ -109,6 +109,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<SubmissionReview>()
             .ToTable("SubmissionReviews", tb => tb.HasTrigger("dummy_trigger_marker_sr")); // table has triggers
 
+        mb.Entity<ExhibitionSubmission>()
+            .ToTable("ExhibitionSubmissions", tb => tb.HasTrigger("dummy_trigger_marker_es")); // table has triggers
+
+        mb.Entity<ExhibitionSubmission>()
+            .ToTable("ExhibitionSubmissions", tb => tb.HasTrigger("dummy_trigger_marker_es")); // table has triggers
+
         // Notification
         mb.Entity<Notification>()
             .HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId);

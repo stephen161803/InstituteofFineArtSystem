@@ -286,7 +286,14 @@ export function ManageExhibitions() {
                   <div className="space-y-2">
                     <Label>Artwork (Best Rated Only) *</Label>
                     <Select value={submissionForm.submissionId}
-                      onValueChange={(v) => setSubmissionForm({ ...submissionForm, submissionId: v })}>
+                      onValueChange={(v) => {
+                        const sub = bestSubmissions.find(s => String(s.id) === v);
+                        setSubmissionForm({
+                          ...submissionForm,
+                          submissionId: v,
+                          proposedPrice: sub ? String(sub.proposedPrice) : submissionForm.proposedPrice,
+                        });
+                      }}>
                       <SelectTrigger><SelectValue placeholder="Select artwork" /></SelectTrigger>
                       <SelectContent>
                         {bestSubmissions.map(s => {
