@@ -84,10 +84,10 @@ export function ManageCompetitions() {
     e.preventDefault();
     try {
       if (editingCompetition) {
-        await competitionsApi.update(editingCompetition.id, formData);
+        await competitionsApi.update(editingCompetition.id, { ...formData, criteria: [] });
         toast.success('Competition updated successfully');
       } else {
-        await competitionsApi.create(formData);
+        await competitionsApi.create({ ...formData, criteria: [] });
         toast.success('Competition created successfully');
       }
       await loadData();

@@ -64,7 +64,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         db.Competitions.Add(comp);
         await db.SaveChangesAsync();
 
-        foreach (var cw in req.Criteria ?? [])
+        foreach (var cw in req.Criteria)
             db.CompetitionCriteria.Add(new CompetitionCriteria
                 { CompetitionId = comp.Id, CriteriaId = cw.CriteriaId, WeightPercent = cw.WeightPercent });
         await db.SaveChangesAsync();
@@ -89,7 +89,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         comp.Status = req.Status;
 
         db.CompetitionCriteria.RemoveRange(comp.CompetitionCriteria);
-        foreach (var cw in req.Criteria ?? [])
+        foreach (var cw in req.Criteria)
             db.CompetitionCriteria.Add(new CompetitionCriteria
                 { CompetitionId = comp.Id, CriteriaId = cw.CriteriaId, WeightPercent = cw.WeightPercent });
 
