@@ -30,6 +30,8 @@ export interface CustomerDto {
   address?: string;
   notes?: string;
   createdAt?: string;
+  purchaseCount?: number;
+  totalSpent?: number;
 }
 
 export interface AdminUserDto {

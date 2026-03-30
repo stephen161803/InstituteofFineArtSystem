@@ -149,7 +149,14 @@ export function ManageCustomers() {
                     {c.address && <span className="truncate">{c.address}</span>}
                   </div>
                   {c.notes && <p className="text-xs text-slate-500 mt-1 italic">{c.notes}</p>}
-                  {c.createdAt && <p className="text-xs text-slate-400 mt-1">Joined: {new Date(c.createdAt).toLocaleDateString()}</p>}
+                  <div className="flex items-center gap-4 mt-1">
+                    {c.createdAt && <p className="text-xs text-slate-400">Joined: {new Date(c.createdAt).toLocaleDateString()}</p>}
+                    {(c.purchaseCount ?? 0) > 0 && (
+                      <p className="text-xs text-green-600 font-medium">
+                        {c.purchaseCount} purchase{(c.purchaseCount ?? 0) > 1 ? 's' : ''} · {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.totalSpent ?? 0)}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2 ml-4 shrink-0">
                   <Button size="sm" variant="outline" onClick={() => handleEdit(c)}><Edit className="size-4" /></Button>

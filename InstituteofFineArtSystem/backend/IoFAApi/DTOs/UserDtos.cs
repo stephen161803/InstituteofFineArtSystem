@@ -93,7 +93,9 @@ public record CustomerDto(
     string? Phone,
     string? Address,
     string? Notes,
-    string? CreatedAt
+    string? CreatedAt,
+    int PurchaseCount = 0,
+    decimal TotalSpent = 0
 );
 
 public record UpdateCustomerRequest(

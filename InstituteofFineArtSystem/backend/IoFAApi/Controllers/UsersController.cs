@@ -168,11 +168,14 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var list = await db.Customers
             .Include(c => c.User)
+            .Include(c => c.Sales)
             .Where(c => c.User.IsActive == true)
             .Select(c => new CustomerDto(
                 c.Id, c.UserId, c.User.FullName, c.User.Email, c.User.Phone,
                 c.Address, c.Notes,
-                c.CreatedAt.ToString("yyyy-MM-dd")))
+                c.CreatedAt.ToString("yyyy-MM-dd"),
+                c.Sales.Count,
+                c.Sales.Sum(s => s.SoldPrice)))
             .ToListAsync();
         return Ok(list);
     }
@@ -191,6 +194,17 @@ public class UsersController(AppDbContext db) : ControllerBase
         customer.Notes = req.Notes;
         await db.SaveChangesAsync();
         return Ok(new { message = "Updated" });
+    }
+
+    [HttpDelete("customers/{customerId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteCustomer(int customerId)
+    {
+        var customer = await db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == customerId);
+        if (customer is null) return NotFound();
+        customer.User.IsActive = false;
+        await db.SaveChangesAsync();
+        return Ok(new { message = "Deactivated" });
     }
 
     // ── ADMIN / MANAGER USERS ─────────────────────────────────────────────
