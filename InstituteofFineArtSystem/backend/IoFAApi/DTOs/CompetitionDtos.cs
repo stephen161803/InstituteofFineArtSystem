@@ -28,7 +28,7 @@ public record CreateCompetitionRequest(
     string StartDate,
     string EndDate,
     string Status,
-    List<CriteriaWeightRequest> Criteria
+    List<CriteriaWeightRequest>? Criteria
 );
 
 public record UpdateCompetitionRequest(
@@ -37,7 +37,7 @@ public record UpdateCompetitionRequest(
     string StartDate,
     string EndDate,
     string Status,
-    List<CriteriaWeightRequest> Criteria
+    List<CriteriaWeightRequest>? Criteria
 );
 
 public record CriteriaWeightRequest(int CriteriaId, decimal WeightPercent);
