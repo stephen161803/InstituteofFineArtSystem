@@ -105,6 +105,33 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         comp.EndDate = DateTime.Parse(req.EndDate);
         comp.Status = req.Status;
 
+        // Find criteria being removed
+        var newCriteriaIds = req.Criteria.Select(c => c.CriteriaId).ToHashSet();
+        var removedCriteriaIds = comp.CompetitionCriteria
+            .Where(cc => !newCriteriaIds.Contains(cc.CriteriaId))
+            .Select(cc => cc.CriteriaId)
+            .ToHashSet();
+
+        // Remove GradeDetails for removed criteria (from all reviews of this competition's submissions)
+        if (removedCriteriaIds.Any())
+        {
+            var submissionIds = await db.Submissions
+                .Where(s => s.CompetitionId == id)
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            var reviewIds = await db.SubmissionReviews
+                .Where(r => submissionIds.Contains(r.SubmissionId))
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            var orphanGrades = await db.GradeDetails
+                .Where(g => reviewIds.Contains(g.ReviewId) && removedCriteriaIds.Contains(g.CriteriaId))
+                .ToListAsync();
+
+            db.GradeDetails.RemoveRange(orphanGrades);
+        }
+
         db.CompetitionCriteria.RemoveRange(comp.CompetitionCriteria);
         foreach (var cw in req.Criteria)
             db.CompetitionCriteria.Add(new CompetitionCriteria
@@ -123,14 +150,21 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         var comp = await db.Competitions
             .Include(c => c.CompetitionCriteria)
             .Include(c => c.Submissions)
+                .ThenInclude(s => s.Review)
+                    .ThenInclude(r => r!.GradeDetails)
             .FirstOrDefaultAsync(c => c.Id == id);
         if (comp is null) return NotFound();
 
-        // Check if has submissions — prevent delete if so
-        if (comp.Submissions.Any())
-            return BadRequest(new { message = $"Cannot delete: this competition has {comp.Submissions.Count} submission(s). Remove submissions first." });
-
-        // Remove criteria first
+        // Remove grade details and reviews first
+        foreach (var sub in comp.Submissions)
+        {
+            if (sub.Review is not null)
+            {
+                db.GradeDetails.RemoveRange(sub.Review.GradeDetails);
+                db.SubmissionReviews.Remove(sub.Review);
+            }
+        }
+        db.Submissions.RemoveRange(comp.Submissions);
         db.CompetitionCriteria.RemoveRange(comp.CompetitionCriteria);
         db.Competitions.Remove(comp);
         await db.SaveChangesAsync();

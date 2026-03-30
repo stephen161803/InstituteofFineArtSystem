@@ -115,6 +115,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<CompetitionCriteria>()
             .ToTable("CompetitionCriteria", tb => tb.HasTrigger("dummy_trigger_marker_cc")); // table has triggers
 
+        mb.Entity<CompetitionCriteria>()
+            .ToTable("CompetitionCriteria", tb => tb.HasTrigger("dummy_trigger_marker_cc")); // table has triggers
+
         // Notification
         mb.Entity<Notification>()
             .HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId);
