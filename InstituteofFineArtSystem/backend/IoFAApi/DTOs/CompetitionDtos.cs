@@ -22,6 +22,8 @@ public record CompetitionCriteriaDto(
 
 public record CriteriaDto(int Id, string CriteriaCode, string CriteriaName, bool IsActive);
 
+public record CreateCriteriaRequest(string CriteriaName);
+
 public record CreateCompetitionRequest(
     string Title,
     string? Description,

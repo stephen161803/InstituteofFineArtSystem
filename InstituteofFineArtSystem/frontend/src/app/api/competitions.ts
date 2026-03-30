@@ -31,6 +31,8 @@ export const competitionsApi = {
   getAll: () => api.get<CompetitionDto[]>('/competitions'),
   getById: (id: number) => api.get<CompetitionDto>(`/competitions/${id}`),
   getCriteria: () => api.get<CriteriaDto[]>('/competitions/criteria'),
+  createCriteria: (criteriaName: string) =>
+    api.post<CriteriaDto>('/competitions/criteria', { criteriaName }),
   create: (data: unknown) => api.post<CompetitionDto>('/competitions', data),
   update: (id: number, data: unknown) => api.put<CompetitionDto>(`/competitions/${id}`, data),
   delete: (id: number) => api.delete(`/competitions/${id}`),

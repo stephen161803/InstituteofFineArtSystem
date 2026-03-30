@@ -49,6 +49,23 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         return Ok(list);
     }
 
+    [HttpPost("criteria")]
+    [Authorize(Roles = "Staff,Manager,Admin")]
+    public async Task<IActionResult> CreateCriteria([FromBody] CreateCriteriaRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.CriteriaName))
+            return BadRequest(new { message = "Criteria name is required" });
+
+        var code = req.CriteriaName.ToUpper().Replace(" ", "_");
+        if (await db.Criteria.AnyAsync(c => c.CriteriaCode == code))
+            return BadRequest(new { message = "Criteria with this name already exists" });
+
+        var criteria = new Criteria { CriteriaCode = code, CriteriaName = req.CriteriaName, IsActive = true };
+        db.Criteria.Add(criteria);
+        await db.SaveChangesAsync();
+        return Ok(new CriteriaDto(criteria.Id, criteria.CriteriaCode, criteria.CriteriaName, criteria.IsActive));
+    }
+
     [HttpPost]
     [Authorize(Roles = "Staff,Manager,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateCompetitionRequest req)

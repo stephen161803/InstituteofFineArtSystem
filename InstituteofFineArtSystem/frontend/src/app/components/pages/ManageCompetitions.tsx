@@ -13,7 +13,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../ui/select';
-import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type CompetitionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
@@ -43,6 +43,9 @@ export function ManageCompetitions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<CompetitionDto | null>(null);
   const [formData, setFormData] = useState<FormData>(defaultForm);
+  const [showNewCriteria, setShowNewCriteria] = useState(false);
+  const [newCriteriaName, setNewCriteriaName] = useState('');
+  const [creatingCriteria, setCreatingCriteria] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -94,6 +97,28 @@ export function ManageCompetitions() {
     }));
   };
 
+  const handleCreateCriteria = async () => {
+    if (!newCriteriaName.trim()) return;
+    setCreatingCriteria(true);
+    try {
+      const created = await competitionsApi.createCriteria(newCriteriaName.trim());
+      setAllCriteria(prev => [...prev, created]);
+      // Auto-add to form
+      const remaining = 100 - totalWeight;
+      setFormData(prev => ({
+        ...prev,
+        criteria: [...prev.criteria, { criteriaId: created.id, weightPercent: Math.min(remaining, 25) }],
+      }));
+      setNewCriteriaName('');
+      setShowNewCriteria(false);
+      toast.success(`Criteria "${created.criteriaName}" created and added`);
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to create criteria');
+    } finally {
+      setCreatingCriteria(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.criteria.length > 0 && totalWeight !== 100) {
@@ -142,6 +167,8 @@ export function ManageCompetitions() {
     setFormData(defaultForm);
     setEditingCompetition(null);
     setIsDialogOpen(false);
+    setShowNewCriteria(false);
+    setNewCriteriaName('');
   };
 
   const getStatusColor = (status: string) => {
@@ -258,6 +285,31 @@ export function ManageCompetitions() {
                 )}
                 {formData.criteria.length === 0 && (
                   <p className="text-xs text-slate-400">No criteria added. Criteria are optional.</p>
+                )}
+
+                {/* Inline create new criteria */}
+                {!showNewCriteria ? (
+                  <button type="button" onClick={() => setShowNewCriteria(true)}
+                    className="text-xs text-purple-600 hover:underline mt-1">
+                    + Create new criteria
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      autoFocus
+                      placeholder="Criteria name (e.g. Originality)"
+                      value={newCriteriaName}
+                      onChange={e => setNewCriteriaName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCreateCriteria(); } }}
+                      className="h-8 text-sm flex-1"
+                    />
+                    <Button type="button" size="sm" onClick={handleCreateCriteria} disabled={creatingCriteria || !newCriteriaName.trim()}>
+                      {creatingCriteria ? <Loader2 className="size-3 animate-spin" /> : 'Add'}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => { setShowNewCriteria(false); setNewCriteriaName(''); }}>
+                      <X className="size-3" />
+                    </Button>
+                  </div>
                 )}
               </div>
 
