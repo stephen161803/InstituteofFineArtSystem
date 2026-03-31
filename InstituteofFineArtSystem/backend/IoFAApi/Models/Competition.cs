@@ -9,6 +9,7 @@ public class Competition
     public DateTime EndDate { get; set; }
     public int? CreatedBy { get; set; }
     public string Status { get; set; } = "Upcoming";
+    public bool IsDeleted { get; set; } = false;
 
     public User? Creator { get; set; }
     public ICollection<CompetitionCriteria> CompetitionCriteria { get; set; } = [];

@@ -26,6 +26,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     {
         var list = await db.Competitions
             .Include(c => c.CompetitionCriteria).ThenInclude(cc => cc.Criteria)
+            .Where(c => !c.IsDeleted)
             .OrderByDescending(c => c.StartDate)
             .ToListAsync();
         return Ok(list.Select(ToDto));
@@ -36,7 +37,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     {
         var c = await db.Competitions
             .Include(c => c.CompetitionCriteria).ThenInclude(cc => cc.Criteria)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         return c is null ? NotFound() : Ok(ToDto(c));
     }
 
@@ -133,6 +134,8 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         }
 
         db.CompetitionCriteria.RemoveRange(comp.CompetitionCriteria);
+        await db.SaveChangesAsync();
+
         foreach (var cw in req.Criteria)
             db.CompetitionCriteria.Add(new CompetitionCriteria
                 { CompetitionId = comp.Id, CriteriaId = cw.CriteriaId, WeightPercent = cw.WeightPercent });
@@ -144,29 +147,19 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager,Staff")]
     public async Task<IActionResult> Delete(int id)
     {
         var comp = await db.Competitions
-            .Include(c => c.CompetitionCriteria)
-            .Include(c => c.Submissions)
-                .ThenInclude(s => s.Review)
-                    .ThenInclude(r => r!.GradeDetails)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         if (comp is null) return NotFound();
 
-        // Remove grade details and reviews first
-        foreach (var sub in comp.Submissions)
-        {
-            if (sub.Review is not null)
-            {
-                db.GradeDetails.RemoveRange(sub.Review.GradeDetails);
-                db.SubmissionReviews.Remove(sub.Review);
-            }
-        }
-        db.Submissions.RemoveRange(comp.Submissions);
-        db.CompetitionCriteria.RemoveRange(comp.CompetitionCriteria);
-        db.Competitions.Remove(comp);
+        // Only allow delete if status is Upcoming
+        if (comp.Status != "Upcoming")
+            return BadRequest(new { message = "Only upcoming competitions can be deleted." });
+
+        // Soft delete
+        comp.IsDeleted = true;
         await db.SaveChangesAsync();
         return Ok(new { message = "Deleted" });
     }

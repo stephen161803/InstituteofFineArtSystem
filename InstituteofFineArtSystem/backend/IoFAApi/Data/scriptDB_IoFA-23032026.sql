@@ -6,6 +6,15 @@ BEGIN
     CREATE DATABASE [FineArtsInstitute_Final]
 END
 GO
+-- Wait for database to be fully online before proceeding
+DECLARE @state int = 0
+WHILE @state != 0 OR @state IS NULL
+BEGIN
+    SELECT @state = state FROM sys.databases WHERE name = N'FineArtsInstitute_Final'
+    IF @state = 0 BREAK
+    WAITFOR DELAY '00:00:01'
+END
+GO
 ALTER DATABASE [FineArtsInstitute_Final] SET COMPATIBILITY_LEVEL = 150
 GO
 IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
@@ -74,6 +83,8 @@ GO
 ALTER DATABASE [FineArtsInstitute_Final] SET QUERY_STORE = ON
 GO
 ALTER DATABASE [FineArtsInstitute_Final] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 1000, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO, MAX_PLANS_PER_QUERY = 200)
+GO
+USE [master]
 GO
 USE [FineArtsInstitute_Final]
 GO
@@ -258,6 +269,7 @@ CREATE TABLE [dbo].[Competitions](
 	[EndDate] [datetime] NOT NULL,
 	[CreatedBy] [int] NULL,
 	[Status] [nvarchar](50) NULL,
+	[IsDeleted] [bit] NOT NULL DEFAULT 0,
 PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
@@ -1088,11 +1100,14 @@ BEGIN
         FROM CompetitionCriteria
         WHERE CompetitionId = ChangedCompetitions.CompetitionId
     ) x
-    WHERE ABS(x.TotalWeight - 100.0) > 0.01;
+    -- Only validate when total is non-zero (not mid-delete) and not exactly 100
+    WHERE x.TotalWeight > 0.01 AND ABS(x.TotalWeight - 100.0) > 0.01
+      -- Skip if total is a partial sum that could still be completed (< 100)
+      AND x.TotalWeight > 100.01;
 
     IF @Bad > 0
     BEGIN
-        RAISERROR (N'Tá»•ng WeightPercent cá»§a má»—i cuá»™c thi pháº£i báº±ng 100 (%)', 16, 1);
+        RAISERROR (N'Total WeightPercent for each competition must equal 100', 16, 1);
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -1291,7 +1306,7 @@ BEGIN
         u.Id,
         'submission',
         N'Submission Reviewed',
-        N'Staff reviewed "' + ISNULL(s.Title, N'Untitled') + N'" â€” rated ' + i.RatingLevel + N'.',
+        N'Staff reviewed "' + ISNULL(s.Title, N'Untitled') + N'" - rated ' + i.RatingLevel + N'.',
         N'/dashboard/submissions',
         s.Id,
         s.CompetitionId

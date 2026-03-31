@@ -49,6 +49,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Competition → Creator (User, optional)
         mb.Entity<Competition>()
             .HasOne(c => c.Creator).WithMany().HasForeignKey(c => c.CreatedBy).IsRequired(false);
+        mb.Entity<Competition>()
+            .ToTable("Competitions", tb => tb.HasTrigger("dummy_trigger_marker_comp")); // table has triggers
 
         // CompetitionCriteria unique constraint
         mb.Entity<CompetitionCriteria>()

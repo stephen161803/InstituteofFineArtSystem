@@ -9,11 +9,12 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+  DialogFooter,
 } from '../ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../ui/select';
-import { Plus, Edit, Trash2, Search, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type CompetitionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
@@ -46,6 +47,8 @@ export function ManageCompetitions() {
   const [showNewCriteria, setShowNewCriteria] = useState(false);
   const [newCriteriaName, setNewCriteriaName] = useState('');
   const [creatingCriteria, setCreatingCriteria] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CompetitionDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -82,7 +85,7 @@ export function ManageCompetitions() {
     const remaining = 100 - totalWeight;
     setFormData(prev => ({
       ...prev,
-      criteria: [...prev.criteria, { criteriaId, weightPercent: Math.min(remaining, 25) }],
+      criteria: [...prev.criteria, { criteriaId, weightPercent: remaining > 0 ? remaining : 0 }],
     }));
   };
 
@@ -107,7 +110,7 @@ export function ManageCompetitions() {
       const remaining = 100 - totalWeight;
       setFormData(prev => ({
         ...prev,
-        criteria: [...prev.criteria, { criteriaId: created.id, weightPercent: Math.min(remaining, 25) }],
+        criteria: [...prev.criteria, { criteriaId: created.id, weightPercent: remaining > 0 ? remaining : 0 }],
       }));
       setNewCriteriaName('');
       setShowNewCriteria(false);
@@ -135,8 +138,8 @@ export function ManageCompetitions() {
       }
       await loadData();
       resetForm();
-    } catch {
-      toast.error('Failed to save competition');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to save competition');
     }
   };
 
@@ -154,12 +157,28 @@ export function ManageCompetitions() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this competition?')) return;
     try {
       await competitionsApi.delete(id);
       await loadData();
       toast.success('Competition deleted successfully');
-    } catch {
-      toast.error('Failed to delete competition');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to delete competition');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await competitionsApi.delete(deleteTarget.id);
+      await loadData();
+      toast.success('Competition deleted successfully');
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to delete competition');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -385,9 +404,11 @@ export function ManageCompetitions() {
                         <Button size="sm" variant="outline" onClick={() => handleEdit(competition)}>
                           <Edit className="size-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDelete(competition.id)}>
-                          <Trash2 className="size-4 text-red-600" />
-                        </Button>
+                        {competition.status === 'Upcoming' && (
+                          <Button size="sm" variant="outline" onClick={() => setDeleteTarget(competition)}>
+                            <Trash2 className="size-4 text-red-600" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -400,6 +421,35 @@ export function ManageCompetitions() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="bg-red-100 p-2 rounded-full">
+                <AlertTriangle className="size-5 text-red-600" />
+              </div>
+              <DialogTitle>Delete Competition</DialogTitle>
+            </div>
+            <DialogDescription className="text-left">
+              Are you sure you want to delete{' '}
+              <span className="font-semibold text-slate-800">"{deleteTarget?.title}"</span>?
+              <br />
+              <span className="text-red-600 text-xs mt-1 block">This action cannot be undone.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Trash2 className="size-4 mr-2" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

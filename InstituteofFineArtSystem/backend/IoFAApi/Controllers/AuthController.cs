@@ -40,7 +40,13 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Username == req.Username && u.IsActive);
 
-        if (user is null || user.PasswordHash != req.Password)
+        if (user is null) return Unauthorized(new { message = "Invalid username or password" });
+
+        // Support both plain-text passwords (seed data) and BCrypt hashed passwords (admin-created users)
+        bool passwordValid = user.PasswordHash == req.Password ||
+            (user.PasswordHash.StartsWith("$2") && BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash));
+
+        if (!passwordValid)
             return Unauthorized(new { message = "Invalid username or password" });
 
         var customer = await db.Customers.FirstOrDefaultAsync(c => c.UserId == user.Id);
@@ -154,7 +160,9 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
 
         if (!string.IsNullOrEmpty(req.CurrentPassword) && !string.IsNullOrEmpty(req.NewPassword))
         {
-            if (!BCrypt.Net.BCrypt.Verify(req.CurrentPassword, user.PasswordHash))
+            bool currentValid = user.PasswordHash == req.CurrentPassword ||
+                (user.PasswordHash.StartsWith("$2") && BCrypt.Net.BCrypt.Verify(req.CurrentPassword, user.PasswordHash));
+            if (!currentValid)
                 return BadRequest(new { message = "Current password is incorrect" });
             user.PasswordHash = req.NewPassword;
         }
