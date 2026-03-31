@@ -19,6 +19,7 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var list = await db.Staffs
             .Include(s => s.User)
+            .Where(s => s.User.IsActive == true)
             .Select(s => new StaffDto(
                 s.UserId, s.User.FullName, s.User.Email, s.User.Phone,
                 s.DateJoined.HasValue ? s.DateJoined.Value.ToString("yyyy-MM-dd") : null,
@@ -91,6 +92,7 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var list = await db.Students
             .Include(s => s.User)
+            .Where(s => s.User.IsActive == true)
             .Select(s => new StudentDto(
                 s.UserId, s.User.FullName, s.User.Email, s.User.Phone,
                 s.AdmissionNumber,
