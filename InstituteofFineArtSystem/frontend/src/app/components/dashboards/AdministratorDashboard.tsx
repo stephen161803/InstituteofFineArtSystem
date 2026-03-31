@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Users, UserCog, Loader2 } from 'lucide-react';
+import { Users, UserCog, Loader2, ArrowRight } from 'lucide-react';
 import { usersApi } from '../../api/users';
 import { toast } from 'sonner';
 
@@ -8,6 +9,7 @@ export function AdministratorDashboard() {
   const [staffCount, setStaffCount] = useState(0);
   const [studentCount, setStudentCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([usersApi.getStaff(), usersApi.getStudents()])
@@ -67,14 +69,28 @@ export function AdministratorDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            <div className="p-3 sm:p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-              <h3 className="font-semibold mb-1 text-sm sm:text-base">Manage Staff</h3>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/staff')}
+              className="text-left p-3 sm:p-4 border rounded-lg hover:bg-slate-50 transition-colors group w-full"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-sm sm:text-base">Manage Staff</h3>
+                <ArrowRight className="size-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              </div>
               <p className="text-xs sm:text-sm text-slate-600">Add, update, or remove staff members and their details</p>
-            </div>
-            <div className="p-3 sm:p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-              <h3 className="font-semibold mb-1 text-sm sm:text-base">Manage Students</h3>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/students')}
+              className="text-left p-3 sm:p-4 border rounded-lg hover:bg-slate-50 transition-colors group w-full"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-sm sm:text-base">Manage Students</h3>
+                <ArrowRight className="size-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              </div>
               <p className="text-xs sm:text-sm text-slate-600">Add, update, or remove student records and admission details</p>
-            </div>
+            </button>
           </div>
         </CardContent>
       </Card>
