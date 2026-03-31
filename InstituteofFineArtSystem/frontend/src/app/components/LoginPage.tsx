@@ -102,16 +102,7 @@ export function LoginPage() {
             </p>
           </div>
           
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-xs text-slate-500 mb-2">Demo accounts (password: <code className="bg-slate-100 px-1 rounded">password123</code>):</p>
-            <div className="space-y-1 text-xs">
-              <p className="text-slate-600">👨‍💼 Manager: <code className="bg-slate-100 px-1 rounded">manager</code></p>
-              <p className="text-slate-600">🔧 Admin: <code className="bg-slate-100 px-1 rounded">admin</code></p>
-              <p className="text-slate-600">👨‍🏫 Staff: <code className="bg-slate-100 px-1 rounded">staff</code> / <code className="bg-slate-100 px-1 rounded">staff2</code> / <code className="bg-slate-100 px-1 rounded">staff3</code></p>
-              <p className="text-slate-600">🎨 Student: <code className="bg-slate-100 px-1 rounded">alice</code> / <code className="bg-slate-100 px-1 rounded">bob</code> / <code className="bg-slate-100 px-1 rounded">carol</code> / <code className="bg-slate-100 px-1 rounded">diana</code> / <code className="bg-slate-100 px-1 rounded">emma</code> / <code className="bg-slate-100 px-1 rounded">charlie</code></p>
-              <p className="text-slate-600">🛒 Customer: <code className="bg-slate-100 px-1 rounded">customer1</code> / <code className="bg-slate-100 px-1 rounded">customer2</code> / <code className="bg-slate-100 px-1 rounded">michael</code> / <code className="bg-slate-100 px-1 rounded">jessica</code></p>
-            </div>
-          </div>
+          
         </CardContent>
       </Card>
     </div>
