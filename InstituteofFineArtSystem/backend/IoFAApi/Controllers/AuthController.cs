@@ -70,7 +70,7 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
         var user = new User
         {
             Username = req.Username,
-            PasswordHash = req.Password,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             FullName = req.FullName,
             Email = req.Email,
             Phone = req.Phone,
@@ -164,7 +164,7 @@ public class AuthController(AppDbContext db, JwtService jwt) : ControllerBase
                 (user.PasswordHash.StartsWith("$2") && BCrypt.Net.BCrypt.Verify(req.CurrentPassword, user.PasswordHash));
             if (!currentValid)
                 return BadRequest(new { message = "Current password is incorrect" });
-            user.PasswordHash = req.NewPassword;
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
         }
 
         user.FullName = req.FullName;

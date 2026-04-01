@@ -203,7 +203,10 @@ export function ManageAwards() {
             >
               {c.title}
               <span className="ml-1.5 text-xs opacity-70">
-                ({studentAwards.filter(a => a.competitionTitle === c.title).length})
+                ({studentAwards.filter(a => {
+                  const sub = submissions.find(s => s.id === a.submissionId);
+                  return sub?.competitionId === c.id;
+                }).length})
               </span>
             </Button>
           ))}
@@ -223,7 +226,10 @@ export function ManageAwards() {
         ) : (
           <div className="space-y-6">
             {competitionsWithAwards.map(comp => {
-              const compAwards = studentAwards.filter(a => a.competitionTitle === comp.title);
+              const compAwards = studentAwards.filter(a => {
+                const sub = submissions.find(s => s.id === a.submissionId);
+                return sub?.competitionId === comp.id;
+              });
               return (
                 <Card key={comp.id}>
                   <CardHeader className="pb-3">

@@ -102,15 +102,17 @@ export function StatisticsReport() {
     };
   });
 
-  const monthlyTrend = [
-    { month: 'Sep 2025', submissions: 2 },
-    { month: 'Oct 2025', submissions: 3 },
-    { month: 'Nov 2025', submissions: 2 },
-    { month: 'Dec 2025', submissions: 5 },
-    { month: 'Jan 2026', submissions: 3 },
-    { month: 'Feb 2026', submissions: 2 },
-    { month: 'Mar 2026', submissions: 5 },
-  ];
+  const monthlyTrend = (() => {
+    const counts: Record<string, number> = {};
+    submissions.forEach((s) => {
+      const d = new Date(s.submittedAt);
+      const key = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([month, count]) => ({ month, submissions: count }))
+      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+  })();
 
   const handleExportReport = () => {
     const reportData = {

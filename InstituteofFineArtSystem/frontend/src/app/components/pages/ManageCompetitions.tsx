@@ -158,17 +158,6 @@ export function ManageCompetitions() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this competition?')) return;
-    try {
-      await competitionsApi.delete(id);
-      await loadData();
-      toast.success('Competition deleted successfully');
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to delete competition');
-    }
-  };
-
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);

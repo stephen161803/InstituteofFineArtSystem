@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { Trophy, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { HomePage } from './components/HomePage';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
@@ -104,7 +105,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/purchase/:artworkId',
-    element: <PurchaseForm />,
+    element: <ProtectedRoute allowedRoles={['customer']}><PurchaseForm /></ProtectedRoute>,
   },
   {
     path: '/artworks/:id',
