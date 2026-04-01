@@ -26,9 +26,11 @@ export function ManageStaff() {
   const [selectedStaff, setSelectedStaff] = useState<StaffDto | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const today = new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
-    fullName: '', email: '', phone: '', username: '', password: '',
-    dateJoined: '', subjectHandled: '', remarks: '',
+    fullName: '', email: '', phone: '', username: '', password: '', confirmPassword: '',
+    dateJoined: today, subjectHandled: '', remarks: '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -56,7 +58,8 @@ export function ManageStaff() {
   }, [staff, searchQuery]);
 
   const resetForm = () => {
-    setFormData({ fullName: '', email: '', phone: '', username: '', password: '', dateJoined: '', subjectHandled: '', remarks: '' });
+    const today = new Date().toISOString().split('T')[0];
+    setFormData({ fullName: '', email: '', phone: '', username: '', password: '', confirmPassword: '', dateJoined: today, subjectHandled: '', remarks: '' });
     setFormErrors({});
   };
 
@@ -69,6 +72,7 @@ export function ManageStaff() {
     if (requirePassword && !formData.username.trim()) errors.username = 'Username is required';
     if (requirePassword && !formData.password.trim()) errors.password = 'Password is required';
     else if (requirePassword && formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
+    if (requirePassword && formData.password && formData.confirmPassword !== formData.password) errors.confirmPassword = 'Passwords do not match';
     return errors;
   };
 
@@ -78,7 +82,7 @@ export function ManageStaff() {
     setSelectedStaff(s);
     setFormData({
       fullName: s.fullName, email: s.email ?? '', phone: s.phone ?? '',
-      username: '', password: '',
+      username: '', password: '', confirmPassword: '',
       dateJoined: s.dateJoined ?? '', subjectHandled: s.subjectHandled ?? '', remarks: s.remarks ?? '',
     });
     setFormErrors({});
@@ -269,13 +273,18 @@ export function ManageStaff() {
             <div className="col-span-full"><h3 className="text-sm font-semibold mb-3 text-purple-700">Login Details</h3></div>
             <div className="space-y-1">
               <Label>Username *</Label>
-              <Input value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Enter username" className={formErrors.username ? 'border-red-500' : ''} />
+              <Input autoComplete="off" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Enter username" className={formErrors.username ? 'border-red-500' : ''} />
               {formErrors.username && <p className="text-xs text-red-500">{formErrors.username}</p>}
             </div>
             <div className="space-y-1">
               <Label>Password *</Label>
-              <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Enter password" className={formErrors.password ? 'border-red-500' : ''} />
+              <Input type="password" autoComplete="new-password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Enter password" className={formErrors.password ? 'border-red-500' : ''} />
               {formErrors.password && <p className="text-xs text-red-500">{formErrors.password}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label>Confirm Password *</Label>
+              <Input type="password" autoComplete="new-password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} placeholder="Re-enter password" className={formErrors.confirmPassword ? 'border-red-500' : ''} />
+              {formErrors.confirmPassword && <p className="text-xs text-red-500">{formErrors.confirmPassword}</p>}
             </div>
             <div className="col-span-full"><h3 className="text-sm font-semibold mb-3 mt-2 text-blue-700">Personal Details</h3></div>
             <div className="space-y-1">

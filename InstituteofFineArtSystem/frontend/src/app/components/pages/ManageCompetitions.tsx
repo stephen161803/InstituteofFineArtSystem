@@ -230,6 +230,9 @@ export function ManageCompetitions() {
                   <Label htmlFor="startDate">Start Date *</Label>
                   <Input id="startDate" type="date" required value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
+                  {formData.startDate && new Date(formData.startDate) < new Date(new Date().toDateString()) && (
+                    <p className="text-xs text-amber-600">⚠️ Start date is in the past.</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date *</Label>
