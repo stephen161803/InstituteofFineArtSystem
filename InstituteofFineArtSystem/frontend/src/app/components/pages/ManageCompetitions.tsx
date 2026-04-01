@@ -26,12 +26,11 @@ interface FormData {
   description: string;
   startDate: string;
   endDate: string;
-  status: CompetitionStatus;
   criteria: CriteriaWeight[];
 }
 
 const defaultForm: FormData = {
-  title: '', description: '', startDate: '', endDate: '', status: 'Upcoming', criteria: [],
+  title: '', description: '', startDate: '', endDate: '', criteria: [],
 };
 
 export function ManageCompetitions() {
@@ -154,7 +153,6 @@ export function ManageCompetitions() {
       description: competition.description ?? '',
       startDate: competition.startDate.slice(0, 10),
       endDate: competition.endDate.slice(0, 10),
-      status: competition.status,
       criteria: competition.criteria.map(c => ({ criteriaId: c.criteriaId, weightPercent: c.weightPercent })),
     });
     setIsDialogOpen(true);
@@ -249,18 +247,6 @@ export function ManageCompetitions() {
                   <Input id="endDate" type="date" required value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <Select value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value as CompetitionStatus })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Upcoming">Upcoming</SelectItem>
-                    <SelectItem value="Ongoing">Ongoing</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               {/* Criteria section */}

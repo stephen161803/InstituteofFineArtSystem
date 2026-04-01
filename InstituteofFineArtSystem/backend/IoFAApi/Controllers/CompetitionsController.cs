@@ -26,14 +26,13 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     {
         var now = DateTime.UtcNow;
 
-        // Auto-update status based on dates using raw SQL to avoid trigger OUTPUT clause issue
-        await db.Database.ExecuteSqlRawAsync(@"
-            UPDATE Competitions SET Status = 'Ongoing'
-            WHERE IsDeleted = 0 AND Status = 'Upcoming' AND StartDate <= {0};
-
-            UPDATE Competitions SET Status = 'Completed'
-            WHERE IsDeleted = 0 AND Status = 'Ongoing' AND EndDate < {0};
-        ", now);
+        // Auto-update status based on dates (2 separate calls to avoid multi-statement issue)
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE Competitions SET Status = 'Ongoing' WHERE IsDeleted = 0 AND Status = 'Upcoming' AND StartDate <= {0}",
+            now);
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE Competitions SET Status = 'Completed' WHERE IsDeleted = 0 AND Status = 'Ongoing' AND EndDate < {0}",
+            now);
 
         var list = await db.Competitions
             .Include(c => c.CompetitionCriteria).ThenInclude(cc => cc.Criteria)
@@ -78,16 +77,20 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         return Ok(new CriteriaDto(criteria.Id, criteria.CriteriaCode, criteria.CriteriaName, criteria.IsActive));
     }
 
+    private static string CalcStatus(DateTime startDate, DateTime endDate)
+    {
+        var now = DateTime.UtcNow;
+        if (now < startDate) return "Upcoming";
+        if (now <= endDate) return "Ongoing";
+        return "Completed";
+    }
+
     [HttpPost]
     [Authorize(Roles = "Staff,Manager,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateCompetitionRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Title))
             return BadRequest(new { message = "Title is required" });
-
-        var validStatuses = new[] { "Upcoming", "Ongoing", "Completed" };
-        if (!validStatuses.Contains(req.Status))
-            return BadRequest(new { message = "Status must be Upcoming, Ongoing, or Completed" });
 
         if (!DateTime.TryParse(req.StartDate, out var startDate))
             return BadRequest(new { message = "Invalid start date" });
@@ -104,7 +107,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         {
             Title = req.Title, Description = req.Description,
             StartDate = startDate, EndDate = endDate,
-            Status = req.Status, CreatedBy = userId,
+            Status = CalcStatus(startDate, endDate), CreatedBy = userId,
         };
         db.Competitions.Add(comp);
         await db.SaveChangesAsync();
@@ -131,7 +134,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         comp.Title = req.Title; comp.Description = req.Description;
         comp.StartDate = DateTime.Parse(req.StartDate);
         comp.EndDate = DateTime.Parse(req.EndDate);
-        comp.Status = req.Status;
+        comp.Status = CalcStatus(DateTime.Parse(req.StartDate), DateTime.Parse(req.EndDate));
 
         // Find criteria being removed
         var newCriteriaIds = req.Criteria.Select(c => c.CriteriaId).ToHashSet();

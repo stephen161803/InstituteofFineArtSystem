@@ -27,9 +27,24 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
         )).ToList()
     );
 
+    private static string CalcStatus(DateOnly? startDate, DateOnly? endDate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (startDate.HasValue && today < startDate.Value) return "Upcoming";
+        if (endDate.HasValue && today > endDate.Value) return "Completed";
+        return "Ongoing";
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Auto-update status based on dates
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE Exhibitions SET Status = 'Ongoing' WHERE Status = 'Upcoming' AND StartDate <= {0}", today);
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE Exhibitions SET Status = 'Completed' WHERE Status = 'Ongoing' AND EndDate < {0}", today);
+
         var list = await db.Exhibitions
             .Include(e => e.ExhibitionSubmissions)
                 .ThenInclude(es => es.Submission).ThenInclude(s => s.Student)
@@ -59,10 +74,6 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(req.Title))
             return BadRequest(new { message = "Title is required" });
 
-        var validStatuses = new[] { "Upcoming", "Ongoing", "Completed" };
-        if (!validStatuses.Contains(req.Status))
-            return BadRequest(new { message = "Status must be Upcoming, Ongoing, or Completed" });
-
         DateOnly? startDate = null, endDate = null;
         if (req.StartDate is not null && !DateOnly.TryParse(req.StartDate, out var sd))
             return BadRequest(new { message = "Invalid start date" });
@@ -77,7 +88,8 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
 
         var ex = new Exhibition
         {
-            Title = req.Title, Location = req.Location, Status = req.Status,
+            Title = req.Title, Location = req.Location,
+            Status = CalcStatus(startDate, endDate),
             StartDate = startDate, EndDate = endDate,
         };
         db.Exhibitions.Add(ex);
@@ -93,9 +105,10 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
     {
         var ex = await db.Exhibitions.Include(e => e.ExhibitionSubmissions).FirstOrDefaultAsync(e => e.Id == id);
         if (ex is null) return NotFound();
-        ex.Title = req.Title; ex.Location = req.Location; ex.Status = req.Status;
+        ex.Title = req.Title; ex.Location = req.Location;
         ex.StartDate = req.StartDate is not null ? DateOnly.Parse(req.StartDate) : null;
         ex.EndDate = req.EndDate is not null ? DateOnly.Parse(req.EndDate) : null;
+        ex.Status = CalcStatus(ex.StartDate, ex.EndDate);
         await db.SaveChangesAsync();
         return Ok(ToDto(ex));
     }

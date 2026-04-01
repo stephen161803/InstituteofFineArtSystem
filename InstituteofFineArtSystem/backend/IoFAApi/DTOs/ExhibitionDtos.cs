@@ -38,16 +38,14 @@ public record CreateExhibitionRequest(
     string Title,
     string? Location,
     string? StartDate,
-    string? EndDate,
-    string Status
+    string? EndDate
 );
 
 public record UpdateExhibitionRequest(
     string Title,
     string? Location,
     string? StartDate,
-    string? EndDate,
-    string Status
+    string? EndDate
 );
 
 public record AddExhibitionSubmissionRequest(int SubmissionId, decimal ProposedPrice);

@@ -29,7 +29,6 @@ public record CreateCompetitionRequest(
     string? Description,
     string StartDate,
     string EndDate,
-    string Status,
     List<CriteriaWeightRequest> Criteria
 );
 
@@ -38,7 +37,6 @@ public record UpdateCompetitionRequest(
     string? Description,
     string StartDate,
     string EndDate,
-    string Status,
     List<CriteriaWeightRequest> Criteria
 );
 
