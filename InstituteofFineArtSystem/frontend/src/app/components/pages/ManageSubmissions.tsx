@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Search, Star, Loader2, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Tính rating level từ tổng điểm weighted
+// Calculate rating level from weighted score
 function calcRatingFromScore(score: number): RatingLevel {
   if (score >= 90) return 'Best';
   if (score >= 80) return 'Better';
@@ -53,7 +53,7 @@ export function ManageSubmissions() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Tính tổng điểm weighted từ criteriaScores
+  // Calculate total weighted score from criteriaScores
   const calcWeightedScore = (scores: Record<number, number>, criteria: CompetitionCriteriaDto[]) => {
     if (criteria.length === 0) return 0;
     return criteria.reduce((sum, c) => {
@@ -86,19 +86,19 @@ export function ManageSubmissions() {
     setWeaknesses(submission.review?.weaknesses ?? '');
     setImprovements(submission.review?.improvements ?? '');
 
-    // Load criteria của competition này
+    // Load criteria for this competition
     const comp = competitions.find(c => c.id === submission.competitionId);
     const criteria = comp?.criteria ?? [];
     setCompetitionCriteria(criteria);
 
-    // Điền điểm cũ nếu có
+    // Fill existing scores if available
     const existingScores: Record<number, number> = {};
     if (submission.review?.gradeDetails) {
       for (const g of submission.review.gradeDetails) {
         existingScores[g.criteriaId] = g.rawScore;
       }
     } else {
-      // Default 0 cho tất cả criteria
+      // Default 0 for all criteria
       for (const c of criteria) {
         existingScores[c.criteriaId] = 0;
       }
@@ -110,7 +110,7 @@ export function ManageSubmissions() {
     const clamped = Math.min(100, Math.max(0, value));
     const newScores = { ...criteriaScores, [criteriaId]: clamped };
     setCriteriaScores(newScores);
-    // Auto-update rating level từ score (chỉ khi không phải Disqualified)
+    // Auto-update rating level from score (skip if Disqualified)
     if (competitionCriteria.length > 0 && ratingLevel !== 'Disqualified') {
       const score = calcWeightedScore(newScores, competitionCriteria);
       setRatingLevel(calcRatingFromScore(score));
@@ -124,7 +124,7 @@ export function ManageSubmissions() {
     }
     setSaving(true);
     try {
-      // Nếu Disqualified: không gửi grade details
+      // If Disqualified: do not send grade details
       const gradeDetails = ratingLevel === 'Disqualified'
         ? []
         : competitionCriteria.map(c => ({
@@ -278,12 +278,12 @@ export function ManageSubmissions() {
                     {competitions.find(c => c.id === selectedSubmission.competitionId)?.title}
                   </p>
                   <p className="text-sm text-slate-500">
-                    Proposed: {selectedSubmission.proposedPrice.toLocaleString()} VND
+                    Proposed: ${selectedSubmission.proposedPrice.toLocaleString('en-US')}
                   </p>
                 </div>
               </div>
 
-              {/* Criteria scoring — ẩn khi Disqualified */}
+              {/* Criteria scoring — hidden when Disqualified */}
               {competitionCriteria.length > 0 && ratingLevel !== 'Disqualified' && (
                 <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
                   <div className="flex items-center justify-between">

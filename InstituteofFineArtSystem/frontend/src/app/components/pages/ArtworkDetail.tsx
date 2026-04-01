@@ -40,11 +40,13 @@ export function ArtworkDetail() {
 
   const getRatingColor = (rating?: string) => {
     switch (rating) {
-      case 'Best':     return 'bg-purple-100 text-purple-700';
-      case 'Better':   return 'bg-blue-100 text-blue-700';
-      case 'Good':     return 'bg-green-100 text-green-700';
-      case 'Moderate': return 'bg-yellow-100 text-yellow-700';
-      default:         return 'bg-gray-100 text-gray-700';
+      case 'Best':         return 'bg-purple-100 text-purple-700';
+      case 'Better':       return 'bg-blue-100 text-blue-700';
+      case 'Good':         return 'bg-green-100 text-green-700';
+      case 'Moderate':     return 'bg-yellow-100 text-yellow-700';
+      case 'Normal':       return 'bg-slate-100 text-slate-700';
+      case 'Disqualified': return 'bg-red-100 text-red-700';
+      default:             return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -97,6 +99,34 @@ export function ArtworkDetail() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Story / Description */}
+            {(submission.description || submission.quotation || submission.poem) && (
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="size-5 text-purple-600" />Artist Statement</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {submission.description && (
+                    <div>
+                      <h3 className="font-semibold text-sm text-slate-600 mb-1">Story / Reason for Entering</h3>
+                      <p className="text-slate-700 leading-relaxed">{submission.description}</p>
+                    </div>
+                  )}
+                  {submission.quotation && (
+                    <div>
+                      <h3 className="font-semibold text-sm text-slate-600 mb-1">Quotation / Motto</h3>
+                      <p className="text-slate-700 italic">"{submission.quotation}"</p>
+                    </div>
+                  )}
+                  {submission.poem && (
+                    <div>
+                      <h3 className="font-semibold text-sm text-slate-600 mb-1">Poem / Creative Writing</h3>
+                      <p className="text-slate-700 whitespace-pre-line">{submission.poem}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {review && (
               <Card>
                 <CardHeader>
@@ -129,7 +159,7 @@ export function ArtworkDetail() {
                 </div>
                 <div className="flex items-start gap-3">
                   <Palette className="size-5 text-slate-400 mt-0.5" />
-                  <div><p className="text-sm text-slate-600">Proposed Price</p><p className="font-semibold">{submission.proposedPrice.toLocaleString()} VND</p></div>
+                  <div><p className="text-sm text-slate-600">Proposed Price</p><p className="font-semibold">${submission.proposedPrice.toLocaleString('en-US')}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -162,7 +192,7 @@ export function ArtworkDetail() {
                   <div className="pt-3 border-t border-purple-100">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-600">Price</span>
-                      <span className="text-lg font-bold text-purple-900">{exhibitionSub.proposedPrice.toLocaleString()} VND</span>
+                      <span className="text-lg font-bold text-purple-900">${exhibitionSub.proposedPrice.toLocaleString('en-US')}</span>
                     </div>
                     {exhibitionSub.status === 'Sold' ? (
                       <Badge className="bg-green-100 text-green-700 mt-2 w-full justify-center">Sold</Badge>

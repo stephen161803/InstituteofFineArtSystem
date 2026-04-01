@@ -31,25 +31,15 @@ export function ExhibitionPage() {
     return new Date(dateString).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const getStatus = (startDate?: string, endDate?: string): 'upcoming' | 'ongoing' | 'completed' => {
-    if (!startDate || !endDate) return 'completed';
-    const today = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    if (today < start) return 'upcoming';
-    if (today <= end) return 'ongoing';
-    return 'completed';
-  };
-
   const filteredExhibitions = useMemo(
-    () => exhibitions.filter((e) => getStatus(e.startDate, e.endDate) === exhibitionFilter),
+    () => exhibitions.filter((e) => (e.status ?? '').toLowerCase() === exhibitionFilter),
     [exhibitions, exhibitionFilter]
   );
 
   const counts = useMemo(() => ({
-    ongoing:   exhibitions.filter((e) => getStatus(e.startDate, e.endDate) === 'ongoing').length,
-    upcoming:  exhibitions.filter((e) => getStatus(e.startDate, e.endDate) === 'upcoming').length,
-    completed: exhibitions.filter((e) => getStatus(e.startDate, e.endDate) === 'completed').length,
+    ongoing:   exhibitions.filter((e) => e.status === 'Ongoing').length,
+    upcoming:  exhibitions.filter((e) => e.status === 'Upcoming').length,
+    completed: exhibitions.filter((e) => e.status === 'Completed').length,
   }), [exhibitions]);
 
   return (
@@ -131,7 +121,7 @@ export function ExhibitionPage() {
               {filteredExhibitions.map((exhibition) => {
                 const artworkCount = exhibition.submissions.length;
                 const thumbnails = exhibition.submissions.slice(0, 4);
-                const status = getStatus(exhibition.startDate, exhibition.endDate);
+                const status = (exhibition.status ?? 'Completed').toLowerCase();
                 return (
                   <div key={exhibition.id} className="bg-white border border-[rgba(0,0,0,0.1)] rounded-[14px] p-4 sm:p-6 hover:shadow-lg transition-all">
                     <div className="flex items-start justify-between mb-3 sm:mb-4">

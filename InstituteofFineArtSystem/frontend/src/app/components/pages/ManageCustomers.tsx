@@ -153,7 +153,7 @@ export function ManageCustomers() {
                     {c.createdAt && <p className="text-xs text-slate-400">Joined: {new Date(c.createdAt).toLocaleDateString()}</p>}
                     {(c.purchaseCount ?? 0) > 0 && (
                       <p className="text-xs text-green-600 font-medium">
-                        {c.purchaseCount} purchase{(c.purchaseCount ?? 0) > 1 ? 's' : ''} · {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.totalSpent ?? 0)}
+                        {c.purchaseCount} purchase{(c.purchaseCount ?? 0) > 1 ? 's' : ''} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c.totalSpent ?? 0)}
                       </p>
                     )}
                   </div>

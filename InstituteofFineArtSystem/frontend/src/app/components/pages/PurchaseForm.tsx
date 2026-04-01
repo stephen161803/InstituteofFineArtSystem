@@ -67,9 +67,9 @@ export function PurchaseForm() {
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND',
+      currency: 'USD',
     }).format(price);
   };
 
@@ -89,13 +89,13 @@ export function PurchaseForm() {
     const oldAddress = currentUser?.address;
     let addressToSave = newAddress;
 
-    // Nếu có địa chỉ cũ và địa chỉ mới khác → hỏi user
+    // If old address exists and new address differs, ask user
     if (oldAddress && newAddress && newAddress !== oldAddress) {
       const confirmUpdate = window.confirm(
         `Your saved address is:\n"${oldAddress}"\n\nYou entered a new address:\n"${newAddress}"\n\nDo you want to update your saved address?`
       );
       if (!confirmUpdate) {
-        // Giữ địa chỉ cũ, không cập nhật DB
+        // Keep old address, do not update DB
         addressToSave = undefined;
       }
     }
@@ -305,7 +305,7 @@ export function PurchaseForm() {
                     </h3>
 
                     <div className="space-y-2">
-                      <Label htmlFor="offeredPrice">Offered Price (VND) *</Label>
+                      <Label htmlFor="offeredPrice">Offered Price (USD) *</Label>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                         <Input

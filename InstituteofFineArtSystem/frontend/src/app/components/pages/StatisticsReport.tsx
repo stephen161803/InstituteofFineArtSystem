@@ -346,7 +346,7 @@ export function StatisticsReport() {
                   <Tooltip /><Legend wrapperStyle={{ fontSize: '12px' }} />
                   <Bar yAxisId="left" dataKey="artworks" fill="#8b5cf6" name="Total Artworks" />
                   <Bar yAxisId="left" dataKey="sold" fill="#10b981" name="Sold" />
-                  <Bar yAxisId="right" dataKey="revenue" fill="#f59e0b" name="Revenue (M VND)" />
+                  <Bar yAxisId="right" dataKey="revenue" fill="#f59e0b" name="Revenue (M USD)" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

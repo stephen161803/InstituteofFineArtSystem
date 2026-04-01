@@ -216,7 +216,7 @@ export function StudentSubmissions() {
               <input type="file" id="imgUpload" className="hidden" accept="image/*" onChange={handleImageUpload} />
             </div>
             <div className="space-y-2">
-              <Label>Proposed Price (VND)</Label>
+              <Label>Proposed Price (USD)</Label>
               <Input type="number" min={0} value={formData.proposedPrice || ''} onChange={(e) => setFormData({ ...formData, proposedPrice: Number(e.target.value) })} placeholder="e.g. 2000000" />
             </div>
             <div className="space-y-2">
@@ -391,11 +391,11 @@ export function StudentSubmissions() {
                           <h4 className="font-semibold text-sm">{es.submissionTitle}</h4>
                           <Badge className={`text-xs shrink-0 ${SALE_STATUS_COLOR[es.status]}`}>{es.status}</Badge>
                         </div>
-                        <p className="text-xs text-slate-500">Proposed price: {es.proposedPrice.toLocaleString()} VND</p>
+                        <p className="text-xs text-slate-500">Proposed price: ${es.proposedPrice.toLocaleString('en-US')}</p>
                         {es.status === 'Sold' && es.sale ? (
                           <div className="mt-2 p-2 bg-green-50 rounded text-xs space-y-0.5">
                             <p className="font-semibold text-green-800">Sold ✓</p>
-                            <p className="text-slate-600">Sold price: <span className="font-semibold">{es.sale.soldPrice.toLocaleString()} VND</span></p>
+                            <p className="text-slate-600">Sold price: <span className="font-semibold">${es.sale.soldPrice.toLocaleString('en-US')}</span></p>
                             <p className="text-slate-600">Buyer: {es.sale.customerName}</p>
                             <p className="text-slate-600">Date: {new Date(es.sale.soldDate).toLocaleDateString()}</p>
                           </div>

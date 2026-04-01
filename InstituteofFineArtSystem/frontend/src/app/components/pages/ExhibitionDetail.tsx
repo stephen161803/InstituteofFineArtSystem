@@ -108,7 +108,7 @@ export function ExhibitionDetail() {
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4"><div className="text-2xl sm:text-3xl font-bold">{artworks.length}</div><div className="text-xs sm:text-sm opacity-90">Total Artworks</div></div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4"><div className="text-2xl sm:text-3xl font-bold">{soldCount}</div><div className="text-xs sm:text-sm opacity-90">Sold</div></div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4"><div className="text-2xl sm:text-3xl font-bold">{artworks.length - soldCount}</div><div className="text-xs sm:text-sm opacity-90">Available</div></div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4"><div className="text-xl sm:text-2xl font-bold">{totalRevenue.toLocaleString()} VND</div><div className="text-xs sm:text-sm opacity-90">Total Revenue</div></div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4"><div className="text-xl sm:text-2xl font-bold">${totalRevenue.toLocaleString('en-US')}</div><div className="text-xs sm:text-sm opacity-90">Total Revenue</div></div>
           </div>
         </div>
       </div>
@@ -139,7 +139,7 @@ export function ExhibitionDetail() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">Price:</span>
                   <div className="flex items-center gap-1 font-semibold text-sm sm:text-base">
-                    <DollarSign className="size-4" />{es.proposedPrice.toLocaleString()} VND
+                    <DollarSign className="size-4" />${es.proposedPrice.toLocaleString('en-US')}
                   </div>
                 </div>
                 {es.status === 'Available' && (

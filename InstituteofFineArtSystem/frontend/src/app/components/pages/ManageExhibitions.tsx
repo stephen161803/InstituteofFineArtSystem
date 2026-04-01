@@ -296,7 +296,7 @@ export function ManageExhibitions() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Proposed Price (VND) *</Label>
+                    <Label>Proposed Price (USD) *</Label>
                     <Input type="number" required placeholder="Enter price" value={submissionForm.proposedPrice}
                       onChange={(e) => setSubmissionForm({ ...submissionForm, proposedPrice: e.target.value })} />
                   </div>
@@ -326,7 +326,7 @@ export function ManageExhibitions() {
                     <p className="text-sm text-slate-600 mb-2">{exhibition?.title}</p>
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="size-4" />
-                      <span className="font-semibold">{es.proposedPrice.toLocaleString()} VND</span>
+                      <span className="font-semibold">${es.proposedPrice.toLocaleString('en-US')}</span>
                     </div>
                     <Badge variant={es.status === 'Sold' ? 'default' : 'secondary'}>{es.status}</Badge>
                   </CardContent>

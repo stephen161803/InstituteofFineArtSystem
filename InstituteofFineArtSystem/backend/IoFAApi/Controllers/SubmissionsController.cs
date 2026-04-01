@@ -158,7 +158,7 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
         var sub = await db.Submissions.FindAsync(id);
         if (sub is null) return NotFound();
 
-        // Load CompetitionCriteria để validate và lấy weightPercent
+        // Load CompetitionCriteria for validation and weightPercent
         var compCriteria = await db.CompetitionCriteria
             .Where(cc => cc.CompetitionId == sub.CompetitionId)
             .ToListAsync();

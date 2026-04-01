@@ -25,7 +25,7 @@ export function CustomerDashboard() {
   const totalSpent = sales.reduce((sum, s) => sum + s.soldPrice, 0);
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });

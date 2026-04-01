@@ -314,7 +314,7 @@ export function StudentCompetitionDetail() {
                       {formErrors.workUrl && <p className="text-xs text-red-500">{formErrors.workUrl}</p>}
                     </div>
                     <div className="space-y-1">
-                      <Label>Proposed Price (VND) *</Label>
+                      <Label>Proposed Price (USD) *</Label>
                       <Input type="number" min={0} placeholder="e.g. 2000000" value={submissionForm.proposedPrice}
                         onChange={(e) => setSubmissionForm({ ...submissionForm, proposedPrice: e.target.value })}
                         className={formErrors.proposedPrice ? 'border-red-500' : ''} />
@@ -388,7 +388,7 @@ export function StudentCompetitionDetail() {
                 <input ref={editFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'edit')} />
               </div>
               <div className="space-y-1">
-                <Label>Proposed Price (VND)</Label>
+                <Label>Proposed Price (USD)</Label>
                 <Input type="number" min={0} value={editingSubmission.proposedPrice || ''}
                   onChange={(e) => setEditingSubmission(p => p ? { ...p, proposedPrice: Number(e.target.value) } : p)} />
               </div>
