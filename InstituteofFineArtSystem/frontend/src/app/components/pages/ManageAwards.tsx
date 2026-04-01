@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Plus, Trophy, Loader2 } from 'lucide-react';
+import { Plus, Trophy, Loader2, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
 
@@ -52,19 +52,33 @@ export function ManageAwards() {
 
   // Competitions that have at least one award
   const competitionsWithAwards = competitions.filter(c =>
-    studentAwards.some(a => a.competitionTitle === c.title)
+    studentAwards.some(a => {
+      const sub = submissions.find(s => s.id === a.submissionId);
+      return sub?.competitionId === c.id;
+    })
   );
 
   const filteredAwards = filterCompetitionId === 'all'
     ? studentAwards
     : studentAwards.filter(a => {
-        const comp = competitions.find(c => c.id === Number(filterCompetitionId));
-        return comp ? a.competitionTitle === comp.title : false;
+        const sub = submissions.find(s => s.id === a.submissionId);
+        return sub ? sub.competitionId === Number(filterCompetitionId) : false;
       });
 
   const resetForm = () => {
     setFormData({ competitionId: '', submissionId: '', awardId: '' });
     setIsDialogOpen(false);
+  };
+
+  const handleRevoke = async (id: number) => {
+    if (!confirm('Revoke this award?')) return;
+    try {
+      await awardsApi.revokeAward(id);
+      setStudentAwards(prev => prev.filter(a => a.id !== id));
+      toast.success('Award revoked');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Failed to revoke award');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +134,7 @@ export function ManageAwards() {
                   onValueChange={(v) => setFormData({ ...formData, competitionId: v, submissionId: '' })}>
                   <SelectTrigger><SelectValue placeholder="Select competition" /></SelectTrigger>
                   <SelectContent>
-                    {competitions.map(c => (
+                    {competitions.filter(c => c.status === 'Completed').map(c => (
                       <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>
                     ))}
                   </SelectContent>
@@ -228,8 +242,12 @@ export function ManageAwards() {
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm">{award.awardName}</p>
                             <p className="text-xs text-slate-600 truncate">{award.studentName ?? '—'}</p>
+                            <p className="text-xs text-slate-500 truncate">{award.submissionTitle ?? '—'}</p>
                             <p className="text-xs text-slate-400">{new Date(award.awardedDate).toLocaleDateString()}</p>
                           </div>
+                          <Button size="sm" variant="ghost" onClick={() => handleRevoke(award.id)} className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="size-3" />
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -249,8 +267,12 @@ export function ManageAwards() {
                   <div className="flex-1">
                     <p className="font-semibold">{award.awardName}</p>
                     <p className="text-sm text-slate-600">{award.studentName ?? '—'}</p>
+                    <p className="text-xs text-slate-500">{award.submissionTitle ?? '—'}</p>
                     <p className="text-xs text-slate-400">{new Date(award.awardedDate).toLocaleDateString()}</p>
                   </div>
+                  <Button size="sm" variant="ghost" onClick={() => handleRevoke(award.id)} className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50">
+                    <Trash2 className="size-3" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -46,21 +46,36 @@ public class AwardsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("student-awards")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager,Staff")]
     public async Task<IActionResult> GrantAward([FromBody] CreateStudentAwardRequest req)
     {
+        var submission = await db.Submissions.FindAsync(req.SubmissionId);
+        if (submission is null) return NotFound(new { message = "Submission not found" });
+
+        var award = await db.Awards.FindAsync(req.AwardId);
+        if (award is null) return NotFound(new { message = "Award not found" });
+
+        // Check duplicate: same submission + same award
+        var duplicate = await db.StudentAwards
+            .AnyAsync(sa => sa.SubmissionId == req.SubmissionId && sa.AwardId == req.AwardId);
+        if (duplicate)
+            return BadRequest(new { message = "This award has already been granted to this submission" });
+
         var awardedBy = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
-        var award = new StudentAward
+        var studentAward = new StudentAward
         {
-            SubmissionId = req.SubmissionId, AwardId = req.AwardId, AwardedBy = awardedBy,
+            SubmissionId = req.SubmissionId,
+            AwardId = req.AwardId,
+            AwardedBy = awardedBy,
+            AwardedDate = DateOnly.FromDateTime(DateTime.Today),
         };
-        db.StudentAwards.Add(award);
+        db.StudentAwards.Add(studentAward);
         await db.SaveChangesAsync();
-        return Ok(new { message = "Award granted", id = award.Id });
+        return Ok(new { message = "Award granted", id = studentAward.Id });
     }
 
     [HttpDelete("student-awards/{id}")]
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Admin,Manager,Staff")]
     public async Task<IActionResult> RevokeAward(int id)
     {
         var award = await db.StudentAwards.FindAsync(id);

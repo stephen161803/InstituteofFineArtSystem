@@ -32,8 +32,19 @@ public class UsersController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateStaff([FromBody] CreateStaffRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.FullName))
+            return BadRequest(new { message = "Full name is required" });
+        if (string.IsNullOrWhiteSpace(req.Username))
+            return BadRequest(new { message = "Username is required" });
+        if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6)
+            return BadRequest(new { message = "Password must be at least 6 characters" });
+        if (string.IsNullOrWhiteSpace(req.Email))
+            return BadRequest(new { message = "Email is required" });
+
         if (await db.Users.AnyAsync(u => u.Username == req.Username))
             return BadRequest(new { message = "Username already taken" });
+        if (await db.Users.AnyAsync(u => u.Email == req.Email))
+            return BadRequest(new { message = "Email already in use" });
 
         var staffRole = await db.Roles.FirstAsync(r => r.RoleName == "Staff");
         var user = new User
@@ -107,8 +118,23 @@ public class UsersController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateStudent([FromBody] CreateStudentRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.FullName))
+            return BadRequest(new { message = "Full name is required" });
+        if (string.IsNullOrWhiteSpace(req.Username))
+            return BadRequest(new { message = "Username is required" });
+        if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6)
+            return BadRequest(new { message = "Password must be at least 6 characters" });
+        if (string.IsNullOrWhiteSpace(req.Email))
+            return BadRequest(new { message = "Email is required" });
+        if (string.IsNullOrWhiteSpace(req.AdmissionNumber))
+            return BadRequest(new { message = "Admission number is required" });
+
         if (await db.Users.AnyAsync(u => u.Username == req.Username))
             return BadRequest(new { message = "Username already taken" });
+        if (await db.Users.AnyAsync(u => u.Email == req.Email))
+            return BadRequest(new { message = "Email already in use" });
+        if (await db.Students.AnyAsync(s => s.AdmissionNumber == req.AdmissionNumber))
+            return BadRequest(new { message = "Admission number already exists" });
 
         var studentRole = await db.Roles.FirstAsync(r => r.RoleName == "Student");
         var user = new User
@@ -232,6 +258,12 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         if (req.Role != "Admin" && req.Role != "Manager")
             return BadRequest(new { message = "Role must be Admin or Manager" });
+        if (string.IsNullOrWhiteSpace(req.FullName))
+            return BadRequest(new { message = "Full name is required" });
+        if (string.IsNullOrWhiteSpace(req.Username))
+            return BadRequest(new { message = "Username is required" });
+        if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6)
+            return BadRequest(new { message = "Password must be at least 6 characters" });
 
         if (await db.Users.AnyAsync(u => u.Username == req.Username))
             return BadRequest(new { message = "Username already taken" });

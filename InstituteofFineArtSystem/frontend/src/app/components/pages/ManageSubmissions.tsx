@@ -110,8 +110,8 @@ export function ManageSubmissions() {
     const clamped = Math.min(100, Math.max(0, value));
     const newScores = { ...criteriaScores, [criteriaId]: clamped };
     setCriteriaScores(newScores);
-    // Auto-update rating level nếu có criteria
-    if (competitionCriteria.length > 0) {
+    // Auto-update rating level từ score (chỉ khi không phải Disqualified)
+    if (competitionCriteria.length > 0 && ratingLevel !== 'Disqualified') {
       const score = calcWeightedScore(newScores, competitionCriteria);
       setRatingLevel(calcRatingFromScore(score));
     }
@@ -124,10 +124,13 @@ export function ManageSubmissions() {
     }
     setSaving(true);
     try {
-      const gradeDetails = competitionCriteria.map(c => ({
-        criteriaId: c.criteriaId,
-        rawScore: criteriaScores[c.criteriaId] ?? 0,
-      }));
+      // Nếu Disqualified: không gửi grade details
+      const gradeDetails = ratingLevel === 'Disqualified'
+        ? []
+        : competitionCriteria.map(c => ({
+            criteriaId: c.criteriaId,
+            rawScore: criteriaScores[c.criteriaId] ?? 0,
+          }));
       await submissionsApi.createReview(selectedSubmission.id, {
         ratingLevel, strengths, weaknesses, improvements,
         gradeDetails,
@@ -280,8 +283,8 @@ export function ManageSubmissions() {
                 </div>
               </div>
 
-              {/* Criteria scoring */}
-              {competitionCriteria.length > 0 && (
+              {/* Criteria scoring — ẩn khi Disqualified */}
+              {competitionCriteria.length > 0 && ratingLevel !== 'Disqualified' && (
                 <div className="space-y-3 p-4 bg-slate-50 rounded-lg border">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold flex items-center gap-1.5">
@@ -331,7 +334,7 @@ export function ManageSubmissions() {
                     ))}
                   </div>
                   <p className="text-xs text-slate-400">
-                    Rating is auto-calculated from scores. You can override it below.
+                    Rating is auto-calculated from scores above.
                   </p>
                 </div>
               )}
@@ -339,17 +342,45 @@ export function ManageSubmissions() {
               {/* Rating level */}
               <div className="space-y-2">
                 <Label>Rating Level *</Label>
-                <Select value={ratingLevel} onValueChange={(v: any) => setRatingLevel(v)}>
-                  <SelectTrigger><SelectValue placeholder="Select rating" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Best">Best (≥90)</SelectItem>
-                    <SelectItem value="Better">Better (≥80)</SelectItem>
-                    <SelectItem value="Good">Good (≥70)</SelectItem>
-                    <SelectItem value="Moderate">Moderate (≥60)</SelectItem>
-                    <SelectItem value="Normal">Normal (&lt;60)</SelectItem>
-                    <SelectItem value="Disqualified">Disqualified</SelectItem>
-                  </SelectContent>
-                </Select>
+                {competitionCriteria.length > 0 ? (
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 p-2 border rounded-md bg-slate-50 flex items-center gap-2">
+                      <span className="text-sm text-slate-500">Auto-calculated:</span>
+                      {ratingLevel && ratingLevel !== 'Disqualified'
+                        ? <Badge className={getRatingColor(ratingLevel)}>{ratingLevel}</Badge>
+                        : ratingLevel === 'Disqualified'
+                          ? <Badge className="bg-red-100 text-red-800">Disqualified</Badge>
+                          : <span className="text-xs text-slate-400">Score criteria above</span>}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={ratingLevel === 'Disqualified' ? 'destructive' : 'outline'}
+                      onClick={() => {
+                        if (ratingLevel === 'Disqualified') {
+                          const score = calcWeightedScore(criteriaScores, competitionCriteria);
+                          setRatingLevel(calcRatingFromScore(score));
+                        } else {
+                          setRatingLevel('Disqualified');
+                        }
+                      }}
+                    >
+                      {ratingLevel === 'Disqualified' ? 'Undo Disqualify' : 'Disqualify'}
+                    </Button>
+                  </div>
+                ) : (
+                  <Select value={ratingLevel} onValueChange={(v: any) => setRatingLevel(v)}>
+                    <SelectTrigger><SelectValue placeholder="Select rating" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Best">Best (≥90)</SelectItem>
+                      <SelectItem value="Better">Better (≥80)</SelectItem>
+                      <SelectItem value="Good">Good (≥70)</SelectItem>
+                      <SelectItem value="Moderate">Moderate (≥60)</SelectItem>
+                      <SelectItem value="Normal">Normal (&lt;60)</SelectItem>
+                      <SelectItem value="Disqualified">Disqualified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Feedback */}

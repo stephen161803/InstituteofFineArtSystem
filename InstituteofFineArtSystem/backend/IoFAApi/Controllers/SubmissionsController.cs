@@ -85,6 +85,22 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Student")]
     public async Task<IActionResult> Create([FromBody] CreateSubmissionRequest req)
     {
+        var competition = await db.Competitions.FirstOrDefaultAsync(c => c.Id == req.CompetitionId && !c.IsDeleted);
+        if (competition is null)
+            return BadRequest(new { message = "Competition not found" });
+        if (competition.Status != "Ongoing")
+            return BadRequest(new { message = "Submissions are only accepted for ongoing competitions" });
+
+        if (req.ProposedPrice <= 0)
+            return BadRequest(new { message = "Proposed price is required and must be greater than 0" });
+        if (string.IsNullOrWhiteSpace(req.Description))
+            return BadRequest(new { message = "Story / Reason for Entering is required" });
+
+        var alreadySubmitted = await db.Submissions
+            .AnyAsync(s => s.CompetitionId == req.CompetitionId && s.StudentId == CurrentUserId);
+        if (alreadySubmitted)
+            return BadRequest(new { message = "You have already submitted to this competition" });
+
         var sub = new Submission
         {
             CompetitionId = req.CompetitionId, StudentId = CurrentUserId,

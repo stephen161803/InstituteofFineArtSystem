@@ -128,6 +128,10 @@ export function ManageCompetitions() {
       toast.error(`Total weight must be 100% (currently ${totalWeight}%)`);
       return;
     }
+    if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
+      toast.error('End date must be after start date');
+      return;
+    }
     try {
       if (editingCompetition) {
         await competitionsApi.update(editingCompetition.id, formData);

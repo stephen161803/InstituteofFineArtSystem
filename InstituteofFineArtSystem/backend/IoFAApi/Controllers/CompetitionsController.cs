@@ -24,6 +24,17 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
+        var now = DateTime.UtcNow;
+
+        // Auto-update status based on dates using raw SQL to avoid trigger OUTPUT clause issue
+        await db.Database.ExecuteSqlRawAsync(@"
+            UPDATE Competitions SET Status = 'Ongoing'
+            WHERE IsDeleted = 0 AND Status = 'Upcoming' AND StartDate <= {0};
+
+            UPDATE Competitions SET Status = 'Completed'
+            WHERE IsDeleted = 0 AND Status = 'Ongoing' AND EndDate < {0};
+        ", now);
+
         var list = await db.Competitions
             .Include(c => c.CompetitionCriteria).ThenInclude(cc => cc.Criteria)
             .Where(c => !c.IsDeleted)
@@ -71,12 +82,28 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Staff,Manager,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateCompetitionRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.Title))
+            return BadRequest(new { message = "Title is required" });
+
+        var validStatuses = new[] { "Upcoming", "Ongoing", "Completed" };
+        if (!validStatuses.Contains(req.Status))
+            return BadRequest(new { message = "Status must be Upcoming, Ongoing, or Completed" });
+
+        if (!DateTime.TryParse(req.StartDate, out var startDate))
+            return BadRequest(new { message = "Invalid start date" });
+        if (!DateTime.TryParse(req.EndDate, out var endDate))
+            return BadRequest(new { message = "Invalid end date" });
+        if (endDate <= startDate)
+            return BadRequest(new { message = "End date must be after start date" });
+
+        if (req.Criteria.Any() && req.Criteria.Sum(c => c.WeightPercent) != 100)
+            return BadRequest(new { message = "Total criteria weight must equal 100%" });
+
         var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         var comp = new Competition
         {
             Title = req.Title, Description = req.Description,
-            StartDate = DateTime.Parse(req.StartDate),
-            EndDate = DateTime.Parse(req.EndDate),
+            StartDate = startDate, EndDate = endDate,
             Status = req.Status, CreatedBy = userId,
         };
         db.Competitions.Add(comp);

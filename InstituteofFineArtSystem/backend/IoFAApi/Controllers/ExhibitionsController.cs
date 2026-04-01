@@ -56,11 +56,29 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Staff,Manager,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateExhibitionRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.Title))
+            return BadRequest(new { message = "Title is required" });
+
+        var validStatuses = new[] { "Upcoming", "Ongoing", "Completed" };
+        if (!validStatuses.Contains(req.Status))
+            return BadRequest(new { message = "Status must be Upcoming, Ongoing, or Completed" });
+
+        DateOnly? startDate = null, endDate = null;
+        if (req.StartDate is not null && !DateOnly.TryParse(req.StartDate, out var sd))
+            return BadRequest(new { message = "Invalid start date" });
+        else if (req.StartDate is not null) startDate = DateOnly.Parse(req.StartDate);
+
+        if (req.EndDate is not null && !DateOnly.TryParse(req.EndDate, out var ed))
+            return BadRequest(new { message = "Invalid end date" });
+        else if (req.EndDate is not null) endDate = DateOnly.Parse(req.EndDate);
+
+        if (startDate.HasValue && endDate.HasValue && endDate <= startDate)
+            return BadRequest(new { message = "End date must be after start date" });
+
         var ex = new Exhibition
         {
             Title = req.Title, Location = req.Location, Status = req.Status,
-            StartDate = req.StartDate is not null ? DateOnly.Parse(req.StartDate) : null,
-            EndDate = req.EndDate is not null ? DateOnly.Parse(req.EndDate) : null,
+            StartDate = startDate, EndDate = endDate,
         };
         db.Exhibitions.Add(ex);
         await db.SaveChangesAsync();

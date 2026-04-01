@@ -111,6 +111,9 @@ export function StudentCompetitionDetail() {
     const errors: Record<string, string> = {};
     if (!submissionForm.title.trim()) errors.title = 'Please enter the artwork title';
     if (!submissionForm.workUrl) errors.workUrl = 'Please upload an artwork file';
+    if (!submissionForm.proposedPrice || Number(submissionForm.proposedPrice) <= 0)
+      errors.proposedPrice = 'Please enter a proposed price';
+    if (!submissionForm.description.trim()) errors.description = 'Please share the story behind your artwork';
     return errors;
   };
 
@@ -311,14 +314,18 @@ export function StudentCompetitionDetail() {
                       {formErrors.workUrl && <p className="text-xs text-red-500">{formErrors.workUrl}</p>}
                     </div>
                     <div className="space-y-1">
-                      <Label>Proposed Price (VND)</Label>
+                      <Label>Proposed Price (VND) *</Label>
                       <Input type="number" min={0} placeholder="e.g. 2000000" value={submissionForm.proposedPrice}
-                        onChange={(e) => setSubmissionForm({ ...submissionForm, proposedPrice: e.target.value })} />
+                        onChange={(e) => setSubmissionForm({ ...submissionForm, proposedPrice: e.target.value })}
+                        className={formErrors.proposedPrice ? 'border-red-500' : ''} />
+                      {formErrors.proposedPrice && <p className="text-xs text-red-500">{formErrors.proposedPrice}</p>}
                     </div>
                     <div className="space-y-1">
-                      <Label>Story / Reason for Entering</Label>
+                      <Label>Story / Reason for Entering *</Label>
                       <Textarea placeholder="Share the story behind your artwork..." rows={3} value={submissionForm.description}
-                        onChange={(e) => setSubmissionForm({ ...submissionForm, description: e.target.value })} />
+                        onChange={(e) => setSubmissionForm({ ...submissionForm, description: e.target.value })}
+                        className={formErrors.description ? 'border-red-500' : ''} />
+                      {formErrors.description && <p className="text-xs text-red-500">{formErrors.description}</p>}
                     </div>
                     <div className="space-y-1">
                       <Label>Quotation / Motto</Label>

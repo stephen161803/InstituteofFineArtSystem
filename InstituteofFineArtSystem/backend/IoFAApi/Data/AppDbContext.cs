@@ -89,6 +89,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(sa => sa.Award).WithMany(a => a.StudentAwards).HasForeignKey(sa => sa.AwardId);
         mb.Entity<StudentAward>()
             .HasOne(sa => sa.AwardedByUser).WithMany().HasForeignKey(sa => sa.AwardedBy);
+        mb.Entity<StudentAward>()
+            .ToTable("StudentAwards", tb => tb.HasTrigger("dummy_trigger_marker_sa")); // table has triggers
 
         // ExhibitionSubmission
         mb.Entity<ExhibitionSubmission>()
@@ -113,9 +115,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         mb.Entity<ExhibitionSubmission>()
             .ToTable("ExhibitionSubmissions", tb => tb.HasTrigger("dummy_trigger_marker_es")); // table has triggers
-
-        mb.Entity<CompetitionCriteria>()
-            .ToTable("CompetitionCriteria", tb => tb.HasTrigger("dummy_trigger_marker_cc")); // table has triggers
 
         mb.Entity<CompetitionCriteria>()
             .ToTable("CompetitionCriteria", tb => tb.HasTrigger("dummy_trigger_marker_cc")); // table has triggers

@@ -68,6 +68,7 @@ export function ManageStaff() {
     if (!formData.phone.trim()) errors.phone = 'Phone is required';
     if (requirePassword && !formData.username.trim()) errors.username = 'Username is required';
     if (requirePassword && !formData.password.trim()) errors.password = 'Password is required';
+    else if (requirePassword && formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
     return errors;
   };
 

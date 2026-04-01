@@ -36,6 +36,10 @@ export function ManageAdminUsers() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.fullName.trim()) { toast.error('Full name is required'); return; }
+    if (!formData.username.trim()) { toast.error('Username is required'); return; }
+    if (!formData.password.trim()) { toast.error('Password is required'); return; }
+    if (formData.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setSaving(true);
     try {
       await usersApi.createAdminUser(formData);
