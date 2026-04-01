@@ -345,7 +345,7 @@ export function ManageSubmissions() {
                 {competitionCriteria.length > 0 ? (
                   <div className="flex items-center gap-3">
                     <div className="flex-1 p-2 border rounded-md bg-slate-50 flex items-center gap-2">
-                      <span className="text-sm text-slate-500">Auto-calculated:</span>
+                      <span className="text-sm text-slate-500">Rating:</span>
                       {ratingLevel && ratingLevel !== 'Disqualified'
                         ? <Badge className={getRatingColor(ratingLevel)}>{ratingLevel}</Badge>
                         : ratingLevel === 'Disqualified'
