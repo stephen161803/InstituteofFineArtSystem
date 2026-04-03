@@ -163,6 +163,16 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
         var sub = await db.Submissions.FindAsync(id);
         if (sub is null) return NotFound();
 
+        // Block review if submission has been awarded
+        var hasAward = await db.StudentAwards.AnyAsync(sa => sa.SubmissionId == id);
+        if (hasAward)
+            return BadRequest(new { message = "Cannot edit review: this submission has already been awarded." });
+
+        // Block review if submission is in an exhibition
+        var inExhibition = await db.ExhibitionSubmissions.AnyAsync(es => es.SubmissionId == id);
+        if (inExhibition)
+            return BadRequest(new { message = "Cannot edit review: this submission is currently in an exhibition." });
+
         // Load CompetitionCriteria for validation and weightPercent
         var compCriteria = await db.CompetitionCriteria
             .Where(cc => cc.CompetitionId == sub.CompetitionId)

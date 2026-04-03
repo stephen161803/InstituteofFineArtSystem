@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
 import { competitionsApi, type CompetitionDto, type CompetitionCriteriaDto } from '../../api/competitions';
 import { usersApi, type StudentDto } from '../../api/users';
+import { awardsApi, type StudentAwardDto } from '../../api/awards';
+import { exhibitionsApi, type ExhibitionSubmissionDto } from '../../api/exhibitions';
 import { RatingLevel } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -27,6 +29,8 @@ export function ManageSubmissions() {
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [students, setStudents] = useState<StudentDto[]>([]);
+  const [awardedSubmissionIds, setAwardedSubmissionIds] = useState<Set<number>>(new Set());
+  const [exhibitedSubmissionIds, setExhibitedSubmissionIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [competitionFilter, setCompetitionFilter] = useState<string>('all');
@@ -45,10 +49,15 @@ export function ManageSubmissions() {
       submissionsApi.getAll(),
       competitionsApi.getAll(),
       usersApi.getStudents(),
-    ]).then(([subs, comps, studs]) => {
+      awardsApi.getStudentAwards(),
+      exhibitionsApi.getAll(),
+    ]).then(([subs, comps, studs, awards, exhibitions]) => {
       setSubmissions(subs);
       setCompetitions(comps);
       setStudents(studs);
+      setAwardedSubmissionIds(new Set(awards.map(a => a.submissionId)));
+      const exhibitedIds = new Set(exhibitions.flatMap(e => e.submissions.map(es => es.submissionId)));
+      setExhibitedSubmissionIds(exhibitedIds);
     }).catch(() => toast.error('Failed to load submissions'))
       .finally(() => setLoading(false));
   }, []);
@@ -158,6 +167,12 @@ export function ManageSubmissions() {
     }
   };
 
+  const getLockReason = (submissionId: number): string | null => {
+    if (awardedSubmissionIds.has(submissionId)) return 'Awarded';
+    if (exhibitedSubmissionIds.has(submissionId)) return 'In Exhibition';
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -242,9 +257,16 @@ export function ManageSubmissions() {
                       ) : (
                         <Badge variant="outline">Not Rated</Badge>
                       )}
-                      <Button size="sm" onClick={() => openReviewDialog(submission)}>
-                        <Star className="size-4 mr-1" />{review ? 'Update' : 'Rate'}
-                      </Button>
+                      {(() => {
+                        const lockReason = getLockReason(submission.id);
+                        return lockReason ? (
+                          <span className="text-xs text-slate-400 italic">🔒 {lockReason}</span>
+                        ) : (
+                          <Button size="sm" onClick={() => openReviewDialog(submission)}>
+                            <Star className="size-4 mr-1" />{review ? 'Update' : 'Rate'}
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
