@@ -74,6 +74,9 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(req.Title))
             return BadRequest(new { message = "Title is required" });
 
+        if (await db.Exhibitions.AnyAsync(e => e.Title == req.Title))
+            return BadRequest(new { message = "An exhibition with this title already exists" });
+
         DateOnly? startDate = null, endDate = null;
         if (req.StartDate is not null && !DateOnly.TryParse(req.StartDate, out var sd))
             return BadRequest(new { message = "Invalid start date" });
@@ -105,6 +108,10 @@ public class ExhibitionsController(AppDbContext db) : ControllerBase
     {
         var ex = await db.Exhibitions.Include(e => e.ExhibitionSubmissions).FirstOrDefaultAsync(e => e.Id == id);
         if (ex is null) return NotFound();
+
+        if (await db.Exhibitions.AnyAsync(e => e.Title == req.Title && e.Id != id))
+            return BadRequest(new { message = "An exhibition with this title already exists" });
+
         ex.Title = req.Title; ex.Location = req.Location;
         ex.StartDate = req.StartDate is not null ? DateOnly.Parse(req.StartDate) : null;
         ex.EndDate = req.EndDate is not null ? DateOnly.Parse(req.EndDate) : null;

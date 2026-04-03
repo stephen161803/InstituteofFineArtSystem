@@ -97,6 +97,9 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(req.Title))
             return BadRequest(new { message = "Title is required" });
 
+        if (await db.Competitions.AnyAsync(c => c.Title == req.Title && !c.IsDeleted))
+            return BadRequest(new { message = "A competition with this title already exists" });
+
         if (!DateTime.TryParse(req.StartDate, out var startDate))
             return BadRequest(new { message = "Invalid start date" });
         if (!DateTime.TryParse(req.EndDate, out var endDate))
@@ -146,6 +149,9 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
             .Include(c => c.CompetitionAwards)
             .FirstOrDefaultAsync(c => c.Id == id);
         if (comp is null) return NotFound();
+
+        if (await db.Competitions.AnyAsync(c => c.Title == req.Title && c.Id != id && !c.IsDeleted))
+            return BadRequest(new { message = "A competition with this title already exists" });
 
         comp.Title = req.Title; comp.Description = req.Description;
         comp.StartDate = DateTime.Parse(req.StartDate);

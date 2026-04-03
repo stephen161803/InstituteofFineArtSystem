@@ -101,6 +101,11 @@ public class SubmissionsController(AppDbContext db) : ControllerBase
         if (alreadySubmitted)
             return BadRequest(new { message = "You have already submitted to this competition" });
 
+        // Check duplicate title within same competition
+        if (!string.IsNullOrWhiteSpace(req.Title) &&
+            await db.Submissions.AnyAsync(s => s.CompetitionId == req.CompetitionId && s.Title == req.Title))
+            return BadRequest(new { message = "A submission with this title already exists in this competition" });
+
         var sub = new Submission
         {
             CompetitionId = req.CompetitionId, StudentId = CurrentUserId,
