@@ -5,9 +5,9 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Plus, Trash2, ShieldCheck, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ShieldCheck, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,6 +20,10 @@ export function ManageAdminUsers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUserDto | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -54,23 +58,41 @@ export function ManageAdminUsers() {
     }
   };
 
-  const handleDelete = async (user: AdminUserDto) => {
+  const handleDelete = (user: AdminUserDto) => {
     if (user.id === currentUser?.id) {
-      toast.error('Cannot deactivate your own account');
+      toast.error('Cannot delete your own account');
       return;
     }
-    if (!confirm(`Deactivate ${user.fullName}?`)) return;
+    setDeleteTarget(user);
+    setDeleteError('');
+  };
+
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError('');
     try {
-      await usersApi.deleteAdminUser(user.id);
-      toast.success('User deactivated');
+      await usersApi.deleteAdminUser(deleteTarget.id);
+      toast.success('User deleted');
+      setDeleteTarget(null);
       await loadUsers();
-    } catch {
-      toast.error('Failed to deactivate user');
+    } catch (err: any) {
+      setDeleteError(err.message ?? 'Failed to delete user');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const admins = users.filter(u => u.role === 'Admin');
-  const managers = users.filter(u => u.role === 'Manager');
+  const admins = users.filter(u => u.role === 'Admin' &&
+    (!searchQuery.trim() || u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     (u.email ?? '').toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  const managers = users.filter(u => u.role === 'Manager' &&
+    (!searchQuery.trim() || u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     (u.email ?? '').toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   if (loading) {
     return (
@@ -90,6 +112,23 @@ export function ManageAdminUsers() {
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="size-4 mr-2" />Add Account
         </Button>
+      </div>
+
+      {/* Search */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+            <Input placeholder="Search by name, username, or email..." value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-3 gap-3">
+        <Card><CardContent className="p-4"><p className="text-xs text-slate-600 mb-1">Total</p><p className="text-2xl font-bold text-slate-700">{users.length}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-slate-600 mb-1">Admins</p><p className="text-2xl font-bold text-red-600">{users.filter(u => u.role === 'Admin').length}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-slate-600 mb-1">Managers</p><p className="text-2xl font-bold text-blue-600">{users.filter(u => u.role === 'Manager').length}</p></CardContent></Card>
       </div>
 
       {/* Create Dialog */}
@@ -200,6 +239,28 @@ export function ManageAdminUsers() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.fullName}</strong> ({deleteTarget?.role})?
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{deleteError}</p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={doDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Trash2 className="size-4 mr-2" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

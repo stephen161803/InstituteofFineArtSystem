@@ -25,6 +25,7 @@ export function ManageStudents() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentDto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -91,7 +92,7 @@ export function ManageStudents() {
   };
 
   const handleView = (s: StudentDto) => { setSelectedStudent(s); setIsViewDialogOpen(true); };
-  const handleDeleteClick = (s: StudentDto) => { setSelectedStudent(s); setIsDeleteDialogOpen(true); };
+  const handleDeleteClick = (s: StudentDto) => { setSelectedStudent(s); setDeleteError(''); setIsDeleteDialogOpen(true); };
 
   const handleSubmitAdd = async () => {
     const errors = validate(true);
@@ -146,14 +147,15 @@ export function ManageStudents() {
   const handleDelete = async () => {
     if (!selectedStudent) return;
     setSaving(true);
+    setDeleteError('');
     try {
-      await usersApi.deleteStudent(selectedStudent.userId);
+      const res = await usersApi.deleteStudent(selectedStudent.userId);
       await loadStudents();
-      toast.success('Student deleted successfully');
+      toast.success(res.message ?? 'Student removed');
       setIsDeleteDialogOpen(false);
       setSelectedStudent(null);
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to delete student');
+      setDeleteError(err.message ?? 'Failed to delete student');
     } finally {
       setSaving(false);
     }
@@ -410,6 +412,9 @@ export function ManageStudents() {
             <DialogTitle>Delete Student</DialogTitle>
             <DialogDescription>Are you sure you want to delete <strong>{selectedStudent?.fullName}</strong>? This action cannot be undone.</DialogDescription>
           </DialogHeader>
+          {deleteError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{deleteError}</p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={saving}>

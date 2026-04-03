@@ -12,9 +12,32 @@ namespace IoFAApi.Controllers;
 [Authorize]
 public class AwardsController(AppDbContext db) : ControllerBase
 {
+    // ── AWARD TEMPLATES ────────────────────────────────────────────────────
+
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAwards() =>
-        Ok(await db.Awards.Select(a => new AwardDto(a.Id, a.AwardName, a.Description)).ToListAsync());
+        Ok(await db.Awards.OrderBy(a => a.AwardName)
+            .Select(a => new AwardDto(a.Id, a.AwardName, a.Description)).ToListAsync());
+
+    [HttpPost]
+    [Authorize(Roles = "Admin,Manager,Staff")]
+    public async Task<IActionResult> CreateAward([FromBody] CreateAwardRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.AwardName))
+            return BadRequest(new { message = "Award name is required" });
+
+        // Avoid duplicates
+        if (await db.Awards.AnyAsync(a => a.AwardName == req.AwardName))
+            return BadRequest(new { message = "Award with this name already exists" });
+
+        var award = new Award { AwardName = req.AwardName, Description = req.Description };
+        db.Awards.Add(award);
+        await db.SaveChangesAsync();
+        return Ok(new AwardDto(award.Id, award.AwardName, award.Description));
+    }
+
+    // ── STUDENT AWARDS ─────────────────────────────────────────────────────
 
     [HttpGet("student-awards")]
     [AllowAnonymous]
@@ -23,7 +46,7 @@ public class AwardsController(AppDbContext db) : ControllerBase
         var q = db.StudentAwards
             .Include(sa => sa.Submission).ThenInclude(s => s.Student)
             .Include(sa => sa.Submission).ThenInclude(s => s.Competition)
-            .Include(sa => sa.Award)
+            .Include(sa => sa.CompetitionAward)
             .AsQueryable();
 
         if (submissionId.HasValue) q = q.Where(sa => sa.SubmissionId == submissionId.Value);
@@ -38,7 +61,7 @@ public class AwardsController(AppDbContext db) : ControllerBase
 
         var list = await q.ToListAsync();
         return Ok(list.Select(sa => new StudentAwardDto(
-            sa.Id, sa.SubmissionId, sa.AwardId, sa.Award.AwardName,
+            sa.Id, sa.SubmissionId, sa.CompetitionAwardId, sa.CompetitionAward.AwardName,
             sa.AwardedBy, sa.AwardedDate.ToString("yyyy-MM-dd"),
             sa.Submission.Student.FullName,
             sa.Submission.Competition.Title,
@@ -49,23 +72,28 @@ public class AwardsController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Admin,Manager,Staff")]
     public async Task<IActionResult> GrantAward([FromBody] CreateStudentAwardRequest req)
     {
-        var submission = await db.Submissions.FindAsync(req.SubmissionId);
+        var submission = await db.Submissions
+            .Include(s => s.Competition)
+            .FirstOrDefaultAsync(s => s.Id == req.SubmissionId);
         if (submission is null) return NotFound(new { message = "Submission not found" });
 
-        var award = await db.Awards.FindAsync(req.AwardId);
-        if (award is null) return NotFound(new { message = "Award not found" });
+        var competitionAward = await db.CompetitionAwards.FindAsync(req.CompetitionAwardId);
+        if (competitionAward is null) return NotFound(new { message = "Award not found" });
 
-        // Check duplicate: same submission + same award
-        var duplicate = await db.StudentAwards
-            .AnyAsync(sa => sa.SubmissionId == req.SubmissionId && sa.AwardId == req.AwardId);
-        if (duplicate)
-            return BadRequest(new { message = "This award has already been granted to this submission" });
+        if (competitionAward.CompetitionId != submission.CompetitionId)
+            return BadRequest(new { message = "Award does not belong to this competition" });
+
+        // Each award can only be granted to ONE submission
+        var alreadyGranted = await db.StudentAwards
+            .AnyAsync(sa => sa.CompetitionAwardId == req.CompetitionAwardId);
+        if (alreadyGranted)
+            return BadRequest(new { message = "This award has already been granted to another submission" });
 
         var awardedBy = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         var studentAward = new StudentAward
         {
             SubmissionId = req.SubmissionId,
-            AwardId = req.AwardId,
+            CompetitionAwardId = req.CompetitionAwardId,
             AwardedBy = awardedBy,
             AwardedDate = DateOnly.FromDateTime(DateTime.Today),
         };

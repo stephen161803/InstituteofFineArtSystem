@@ -13,5 +13,6 @@ public class Competition
 
     public User? Creator { get; set; }
     public ICollection<CompetitionCriteria> CompetitionCriteria { get; set; } = [];
+    public ICollection<CompetitionAward> CompetitionAwards { get; set; } = [];
     public ICollection<Submission> Submissions { get; set; } = [];
 }

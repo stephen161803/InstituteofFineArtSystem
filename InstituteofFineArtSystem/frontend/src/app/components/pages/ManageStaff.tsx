@@ -25,6 +25,7 @@ export function ManageStaff() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffDto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -90,7 +91,7 @@ export function ManageStaff() {
   };
 
   const handleView = (s: StaffDto) => { setSelectedStaff(s); setIsViewDialogOpen(true); };
-  const handleDeleteClick = (s: StaffDto) => { setSelectedStaff(s); setIsDeleteDialogOpen(true); };
+  const handleDeleteClick = (s: StaffDto) => { setSelectedStaff(s); setDeleteError(''); setIsDeleteDialogOpen(true); };
 
   const handleSubmitAdd = async () => {
     const errors = validate(true);
@@ -143,14 +144,15 @@ export function ManageStaff() {
   const handleDelete = async () => {
     if (!selectedStaff) return;
     setSaving(true);
+    setDeleteError('');
     try {
-      await usersApi.deleteStaff(selectedStaff.userId);
+      const res = await usersApi.deleteStaff(selectedStaff.userId);
       await loadStaff();
-      toast.success('Staff member deleted successfully');
+      toast.success(res.message ?? 'Staff member removed');
       setIsDeleteDialogOpen(false);
       setSelectedStaff(null);
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to delete staff');
+      setDeleteError(err.message ?? 'Failed to delete staff');
     } finally {
       setSaving(false);
     }
@@ -431,6 +433,9 @@ export function ManageStaff() {
             <DialogTitle className="flex items-center gap-2 text-red-600"><Trash2 className="size-5" />Delete Staff Member</DialogTitle>
             <DialogDescription>Are you sure you want to delete <span className="font-semibold">{selectedStaff?.fullName}</span>? This action cannot be undone.</DialogDescription>
           </DialogHeader>
+          {deleteError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{deleteError}</p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={saving}>

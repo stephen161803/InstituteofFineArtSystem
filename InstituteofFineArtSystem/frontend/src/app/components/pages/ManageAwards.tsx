@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
-import { awardsApi, type AwardDto, type StudentAwardDto } from '../../api/awards';
+import { useState, useEffect, useMemo } from 'react';
+import { awardsApi, type StudentAwardDto, type CompetitionAwardDto } from '../../api/awards';
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
-import { competitionsApi, type CompetitionDto } from '../../api/competitions';
+import { competitionsApi, type CompetitionDto, type CompetitionCriteriaDto } from '../../api/competitions';
 import { usersApi, type StudentDto } from '../../api/users';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Label } from '../ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '../ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Plus, Trophy, Loader2, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import { Trophy, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AWARD_ICON: Record<string, string> = {
@@ -17,277 +16,359 @@ const AWARD_ICON: Record<string, string> = {
   'Honorable Mention': '🏅', 'Best Use of Color': '🎨',
 };
 
+type SortKey = 'totalScore' | string;
+type PendingMap = Record<number, Set<number>>;
+
 export function ManageAwards() {
   const [studentAwards, setStudentAwards] = useState<StudentAwardDto[]>([]);
-  const [awards, setAwards] = useState<AwardDto[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [students, setStudents] = useState<StudentDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({ competitionId: '', submissionId: '', awardId: '' });
-  const [filterCompetitionId, setFilterCompetitionId] = useState<string>('all');
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('totalScore');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [pending, setPending] = useState<PendingMap>({});
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; ungrantedNames: string[]; entries: [number, number][] }>({
+    open: false, ungrantedNames: [], entries: [],
+  });
+  const [revokeDialog, setRevokeDialog] = useState<{ open: boolean; id: number; awardName: string }>({
+    open: false, id: 0, awardName: '',
+  });
 
   useEffect(() => {
     Promise.all([
       awardsApi.getStudentAwards(),
-      awardsApi.getAwards(),
       submissionsApi.getAll(),
       competitionsApi.getAll(),
       usersApi.getStudents(),
-    ]).then(([sa, a, subs, comps, studs]) => {
-      setStudentAwards(sa);
-      setAwards(a);
-      setSubmissions(subs);
-      setCompetitions(comps);
-      setStudents(studs);
-    }).catch(() => toast.error('Failed to load awards'))
+    ]).then(([sa, subs, comps, studs]) => {
+      setStudentAwards(sa); setSubmissions(subs);
+      setCompetitions(comps); setStudents(studs);
+    }).catch(() => toast.error('Failed to load'))
       .finally(() => setLoading(false));
   }, []);
 
-  const selectedCompetitionSubmissions = formData.competitionId
-    ? submissions.filter(s => s.competitionId === Number(formData.competitionId))
-    : [];
+  const comp = competitions.find(c => c.id === Number(selectedCompetitionId));
+  const awards: CompetitionAwardDto[] = comp?.awards ?? [];
+  const criteria: CompetitionCriteriaDto[] = comp?.criteria ?? [];
 
-  // Competitions that have at least one award
-  const competitionsWithAwards = competitions.filter(c =>
-    studentAwards.some(a => {
-      const sub = submissions.find(s => s.id === a.submissionId);
-      return sub?.competitionId === c.id;
-    })
-  );
-
-  const filteredAwards = filterCompetitionId === 'all'
-    ? studentAwards
-    : studentAwards.filter(a => {
-        const sub = submissions.find(s => s.id === a.submissionId);
-        return sub ? sub.competitionId === Number(filterCompetitionId) : false;
+  const rows = useMemo(() => {
+    if (!selectedCompetitionId) return [];
+    return submissions
+      .filter(s => s.competitionId === Number(selectedCompetitionId))
+      .map(s => {
+        const scores: Record<number, number> = {};
+        s.review?.gradeDetails?.forEach(g => { scores[g.criteriaId] = g.rawScore; });
+        const total = criteria.length > 0
+          ? criteria.reduce((sum, c) => sum + (scores[c.criteriaId] ?? 0) * c.weightPercent / 100, 0)
+          : 0;
+        const student = students.find(st => st.userId === s.studentId);
+        const grantedAwards = studentAwards.filter(a => a.submissionId === s.id);
+        return { s, student, scores, total, grantedAwards };
       });
+  }, [submissions, selectedCompetitionId, students, criteria, studentAwards]);
 
-  const resetForm = () => {
-    setFormData({ competitionId: '', submissionId: '', awardId: '' });
-    setIsDialogOpen(false);
+  const sorted = useMemo(() => [...rows].sort((a, b) => {
+    const va = sortKey === 'totalScore' ? a.total : (a.scores[Number(sortKey)] ?? 0);
+    const vb = sortKey === 'totalScore' ? b.total : (b.scores[Number(sortKey)] ?? 0);
+    return sortDir === 'desc' ? vb - va : va - vb;
+  }), [rows, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortKey(key); setSortDir('desc'); }
   };
 
-  const handleRevoke = async (id: number) => {
-    if (!confirm('Revoke this award?')) return;
+  const SortBtn = ({ k, label }: { k: SortKey; label: string }) => (
+    <button onClick={() => toggleSort(k)}
+      className={`flex items-center gap-0.5 hover:text-purple-600 ${sortKey === k ? 'text-purple-600 font-semibold' : ''}`}>
+      {label}
+      {sortKey === k ? (sortDir === 'desc' ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />) : null}
+    </button>
+  );
+
+  const awardGrantedTo = (awardId: number) =>
+    studentAwards.find(a => a.competitionAwardId === awardId);
+
+  const togglePending = (submissionId: number, awardId: number) => {
+    const existing = awardGrantedTo(awardId);
+    if (existing && existing.submissionId !== submissionId) {
+      toast.error(`"${existing.awardName}" already granted to ${existing.studentName}`);
+      return;
+    }
+    setPending(prev => {
+      const set = new Set(prev[submissionId] ?? []);
+      if (set.has(awardId)) set.delete(awardId); else set.add(awardId);
+      return { ...prev, [submissionId]: set };
+    });
+  };
+
+  const pendingCount = Object.values(pending).reduce((sum, s) => sum + s.size, 0);
+
+  const handleGrantAll = () => {
+    const entries: [number, number][] = [];
+    Object.entries(pending).forEach(([subId, awardSet]) => {
+      awardSet.forEach(awardId => entries.push([Number(subId), awardId]));
+    });
+    if (entries.length === 0) return toast.error('No awards selected');
+
+    const awardCounts: Record<number, number> = {};
+    for (const [, awardId] of entries) {
+      awardCounts[awardId] = (awardCounts[awardId] ?? 0) + 1;
+      if (awardCounts[awardId] > 1) {
+        const a = awards.find(x => x.id === awardId);
+        return toast.error(`"${a?.awardName}" selected for multiple students`);
+      }
+    }
+
+    const selectedAwardIds = new Set(entries.map(([, aid]) => aid));
+    const ungrantedAfter = awards.filter(a =>
+      !studentAwards.some(sa => sa.competitionAwardId === a.id) && !selectedAwardIds.has(a.id)
+    );
+
+    if (ungrantedAfter.length > 0) {
+      setConfirmDialog({ open: true, ungrantedNames: ungrantedAfter.map(a => a.awardName), entries });
+    } else {
+      doGrant(entries);
+    }
+  };
+
+  const doGrant = async (entries: [number, number][]) => {
+    setConfirmDialog(d => ({ ...d, open: false }));
+    setSaving(true);
+    let success = 0;
+    for (const [subId, awardId] of entries) {
+      try {
+        await awardsApi.grantAward(subId, awardId);
+        success++;
+      } catch (err: any) {
+        toast.error(err.message ?? 'Failed');
+      }
+    }
+    const updated = await awardsApi.getStudentAwards();
+    setStudentAwards(updated);
+    setPending({});
+    setSaving(false);
+    if (success > 0) toast.success(`${success} award(s) issued`);
+  };
+
+  const handleRevoke = async (id: number, awardName: string) => {
+    setRevokeDialog({ open: true, id, awardName });
+  };
+
+  const doRevoke = async () => {
+    const { id } = revokeDialog;
+    setRevokeDialog(d => ({ ...d, open: false }));
     try {
       await awardsApi.revokeAward(id);
       setStudentAwards(prev => prev.filter(a => a.id !== id));
       toast.success('Award revoked');
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to revoke award');
+      toast.error(err.message ?? 'Failed');
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.submissionId || !formData.awardId) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    setSaving(true);
-    try {
-      await awardsApi.grantAward(Number(formData.submissionId), Number(formData.awardId));
-      const updated = await awardsApi.getStudentAwards();
-      setStudentAwards(updated);
-      toast.success('Award issued successfully');
-      resetForm();
-    } catch (err: any) {
-      toast.error(err.message ?? 'Failed to issue award');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-slate-400" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="size-8 animate-spin text-slate-400" /></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Manage Awards</h1>
-          <p className="text-slate-600">Issue and track competition awards</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
-              <Plus className="size-4 mr-2" />Issue Award
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Issue New Award</DialogTitle>
-              <DialogDescription>Issue a new award to a student submission.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Competition *</Label>
-                <Select value={formData.competitionId}
-                  onValueChange={(v) => setFormData({ ...formData, competitionId: v, submissionId: '' })}>
-                  <SelectTrigger><SelectValue placeholder="Select competition" /></SelectTrigger>
-                  <SelectContent>
-                    {competitions.filter(c => c.status === 'Completed').map(c => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {formData.competitionId && (
-                <div className="space-y-2">
-                  <Label>Submission *</Label>
-                  <Select value={formData.submissionId}
-                    onValueChange={(v) => setFormData({ ...formData, submissionId: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select submission" /></SelectTrigger>
-                    <SelectContent>
-                      {selectedCompetitionSubmissions.map(s => {
-                        const student = students.find(st => st.userId === s.studentId);
-                        return (
-                          <SelectItem key={s.id} value={String(s.id)}>
-                            {s.title} — {student?.fullName ?? s.studentName ?? 'Unknown'}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label>Award *</Label>
-                <Select value={formData.awardId}
-                  onValueChange={(v) => setFormData({ ...formData, awardId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select award" /></SelectTrigger>
-                  <SelectContent>
-                    {awards.map(a => (
-                      <SelectItem key={a.id} value={String(a.id)}>{a.awardName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
-                <Button type="submit" disabled={saving}>
-                  {saving && <Loader2 className="size-4 mr-2 animate-spin" />}
-                  Issue Award
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-3xl font-bold">Manage Awards</h1>
+        <p className="text-slate-600">Click award badges to select, then grant all at once</p>
       </div>
 
-      {/* Filter bar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Label className="shrink-0">Filter by Competition:</Label>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant={filterCompetitionId === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilterCompetitionId('all')}
-          >
-            All ({studentAwards.length})
-          </Button>
-          {competitionsWithAwards.map(c => (
-            <Button
-              key={c.id}
-              size="sm"
-              variant={filterCompetitionId === String(c.id) ? 'default' : 'outline'}
-              onClick={() => setFilterCompetitionId(String(c.id))}
-            >
-              {c.title}
-              <span className="ml-1.5 text-xs opacity-70">
-                ({studentAwards.filter(a => {
-                  const sub = submissions.find(s => s.id === a.submissionId);
-                  return sub?.competitionId === c.id;
-                }).length})
-              </span>
-            </Button>
+      <Select value={selectedCompetitionId} onValueChange={v => { setSelectedCompetitionId(v); setPending({}); setSortKey('totalScore'); }}>
+        <SelectTrigger className="w-80">
+          <SelectValue placeholder="Select competition..." />
+        </SelectTrigger>
+        <SelectContent>
+          {competitions.filter(c => c.status === 'Completed' && c.awards.length > 0).map(c => (
+            <SelectItem key={c.id} value={String(c.id)}>{c.title}</SelectItem>
           ))}
-        </div>
-      </div>
+        </SelectContent>
+      </Select>
 
-      {/* Awards grouped by competition */}
-      {filterCompetitionId === 'all' ? (
-        competitionsWithAwards.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Trophy className="size-12 mx-auto mb-4 text-slate-400" />
-              <h3 className="font-semibold mb-2">No Awards Issued Yet</h3>
-              <p className="text-slate-600">Start recognizing outstanding student work</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {competitionsWithAwards.map(comp => {
-              const compAwards = studentAwards.filter(a => {
-                const sub = submissions.find(s => s.id === a.submissionId);
-                return sub?.competitionId === comp.id;
-              });
-              return (
-                <Card key={comp.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Trophy className="size-4 text-yellow-600" />{comp.title}
-                      </CardTitle>
-                      <Badge variant="secondary">{compAwards.length} award{compAwards.length > 1 ? 's' : ''}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {compAwards.map(award => (
-                        <div key={award.id} className="flex items-center gap-3 p-3 border rounded-lg bg-yellow-50">
-                          <span className="text-2xl shrink-0">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm">{award.awardName}</p>
-                            <p className="text-xs text-slate-600 truncate">{award.studentName ?? '—'}</p>
-                            <p className="text-xs text-slate-500 truncate">{award.submissionTitle ?? '—'}</p>
-                            <p className="text-xs text-slate-400">{new Date(award.awardedDate).toLocaleDateString()}</p>
-                          </div>
-                          <Button size="sm" variant="ghost" onClick={() => handleRevoke(award.id)} className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50">
-                            <Trash2 className="size-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredAwards.map(award => (
-            <Card key={award.id}>
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl shrink-0">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>
-                  <div className="flex-1">
-                    <p className="font-semibold">{award.awardName}</p>
-                    <p className="text-sm text-slate-600">{award.studentName ?? '—'}</p>
-                    <p className="text-xs text-slate-500">{award.submissionTitle ?? '—'}</p>
-                    <p className="text-xs text-slate-400">{new Date(award.awardedDate).toLocaleDateString()}</p>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => handleRevoke(award.id)} className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="size-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {filteredAwards.length === 0 && (
-            <p className="text-slate-500 text-sm col-span-2 text-center py-8">No awards for this competition</p>
-          )}
-        </div>
+      {!selectedCompetitionId && (
+        <Card><CardContent className="p-12 text-center">
+          <Trophy className="size-10 mx-auto mb-3 text-slate-300" />
+          <p className="text-slate-500">Select a completed competition to issue awards</p>
+        </CardContent></Card>
       )}
+
+      {selectedCompetitionId && sorted.length === 0 && (
+        <p className="text-slate-500 text-sm">No submissions found for this competition.</p>
+      )}
+
+      {selectedCompetitionId && sorted.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-base">{comp?.title} — {sorted.length} submissions</CardTitle>
+              <Button disabled={pendingCount === 0 || saving} onClick={handleGrantAll} className="gap-2">
+                {saving ? <Loader2 className="size-4 animate-spin" /> : <Trophy className="size-4" />}
+                Grant Selected ({pendingCount})
+              </Button>
+            </div>
+            {/* Warning: ungranted awards */}
+            {(() => {
+              const ungrantedAwards = awards.filter(a => !studentAwards.some(sa => sa.competitionAwardId === a.id));
+              if (ungrantedAwards.length === 0) return null;
+              return (
+                <p className="text-xs text-amber-600 mt-2">
+                  ⚠️ {ungrantedAwards.length} award{ungrantedAwards.length > 1 ? 's' : ''} not yet granted:{' '}
+                  {ungrantedAwards.map(a => a.awardName).join(', ')}
+                </p>
+              );
+            })()}
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b">
+                  <tr>
+                    <th className="p-3 text-left font-semibold">#</th>
+                    <th className="p-3 text-left font-semibold">Student</th>
+                    <th className="p-3 text-left font-semibold">Submission</th>
+                    <th className="p-3 text-left font-semibold"><SortBtn k="totalScore" label="Total" /></th>
+                    {criteria.map(c => (
+                      <th key={c.criteriaId} className="p-3 text-left font-semibold whitespace-nowrap">
+                        <SortBtn k={String(c.criteriaId)} label={`${c.criteriaName ?? c.criteriaCode} (${c.weightPercent}%)`} />
+                      </th>
+                    ))}
+                    <th className="p-3 text-left font-semibold">Rating</th>
+                    <th className="p-3 text-left font-semibold">Awards</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((row, idx) => {
+                    const pendingSet = pending[row.s.id] ?? new Set<number>();
+                    const pendingList = awards.filter(a => pendingSet.has(a.id));
+                    return (
+                      <tr key={row.s.id} className={`border-b hover:bg-slate-50 ${row.grantedAwards.length > 0 || pendingSet.size > 0 ? 'bg-yellow-50/30' : ''}`}>
+                        <td className="p-3 text-slate-400">{idx + 1}</td>
+                        <td className="p-3 font-medium">{row.student?.fullName ?? row.s.studentName ?? '—'}</td>
+                        <td className="p-3 text-slate-600 max-w-[140px] truncate">{row.s.title ?? '—'}</td>
+                        <td className="p-3 font-bold text-purple-700">
+                          {criteria.length > 0 ? row.total.toFixed(1) : '—'}
+                        </td>
+                        {criteria.map(c => (
+                          <td key={c.criteriaId} className="p-3 text-center">
+                            {row.scores[c.criteriaId] ?? <span className="text-slate-300">—</span>}
+                          </td>
+                        ))}
+                        <td className="p-3">
+                          {row.s.review ? (
+                            <Badge className={
+                              row.s.review.ratingLevel === 'Best' ? 'bg-green-100 text-green-800' :
+                              row.s.review.ratingLevel === 'Better' ? 'bg-blue-100 text-blue-800' :
+                              row.s.review.ratingLevel === 'Good' ? 'bg-purple-100 text-purple-800' :
+                              'bg-slate-100 text-slate-800'
+                            }>{row.s.review.ratingLevel}</Badge>
+                          ) : <span className="text-xs text-slate-400">—</span>}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Already granted badges */}
+                            {row.grantedAwards.map(g => (
+                              <span key={g.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-300 whitespace-nowrap">
+                                {AWARD_ICON[g.awardName ?? ''] ?? '🏆'} {g.awardName}
+                                <button onClick={() => handleRevoke(g.id, g.awardName ?? '')} className="ml-0.5 text-red-400 hover:text-red-600">×</button>
+                              </span>
+                            ))}
+                            {/* Pending badges */}
+                            {pendingList.map(a => (
+                              <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-300 whitespace-nowrap">
+                                {AWARD_ICON[a.awardName] ?? '🏆'} {a.awardName}
+                                <button onClick={() => togglePending(row.s.id, a.id)} className="ml-0.5 text-purple-400 hover:text-red-500">×</button>
+                              </span>
+                            ))}
+                            {/* Dropdown to add more */}
+                            <Select value="" onValueChange={v => togglePending(row.s.id, Number(v))}>
+                              <SelectTrigger className="h-6 w-32 text-xs border-dashed">
+                                <SelectValue placeholder="+ Add award" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {awards
+                                  .filter(a => !row.grantedAwards.find(g => g.competitionAwardId === a.id) && !pendingSet.has(a.id))
+                                  .map(a => {
+                                    const taken = awardGrantedTo(a.id);
+                                    const takenByOther = taken && taken.submissionId !== row.s.id;
+                                    // Also check if pending for another submission
+                                    const pendingByOther = !takenByOther && Object.entries(pending).some(
+                                      ([sid, set]) => Number(sid) !== row.s.id && set.has(a.id)
+                                    );
+                                    const disabled = !!takenByOther || pendingByOther;
+                                    return (
+                                      <SelectItem key={a.id} value={String(a.id)} disabled={disabled}>
+                                        {AWARD_ICON[a.awardName] ?? '🏆'} {a.awardName}
+                                        {takenByOther ? ` (→ ${taken!.studentName?.split(' ').pop()})` : ''}
+                                        {pendingByOther ? ' (selected)' : ''}
+                                      </SelectItem>
+                                    );
+                                  })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Revoke confirm dialog */}
+      <Dialog open={revokeDialog.open} onOpenChange={open => setRevokeDialog(d => ({ ...d, open }))}>
+        <DialogContent className="max-w-xs p-5">
+          <DialogHeader>
+            <DialogTitle className="text-base">Revoke award?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500 mt-1">
+            Remove <span className="font-medium text-slate-700">{revokeDialog.awardName}</span> from this student.
+          </p>
+          <DialogFooter className="mt-4 gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setRevokeDialog(d => ({ ...d, open: false }))}>
+              Cancel
+            </Button>
+            <Button size="sm" variant="destructive" onClick={doRevoke}>
+              Revoke
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm dialog for ungranted awards */}
+      <Dialog open={confirmDialog.open} onOpenChange={open => setConfirmDialog(d => ({ ...d, open }))}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="size-5 text-amber-500" />
+              <DialogTitle>Some awards not assigned</DialogTitle>
+            </div>
+            <DialogDescription className="text-left">
+              The following awards will <span className="font-semibold text-slate-800">not</span> be granted:
+              <ul className="mt-2 space-y-1">
+                {confirmDialog.ungrantedNames.map(name => (
+                  <li key={name} className="text-sm text-amber-700">• {name}</li>
+                ))}
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDialog(d => ({ ...d, open: false }))}>
+              Go back
+            </Button>
+            <Button onClick={() => doGrant(confirmDialog.entries)}>
+              Continue anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

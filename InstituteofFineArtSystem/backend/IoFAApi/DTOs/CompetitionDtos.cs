@@ -8,7 +8,8 @@ public record CompetitionDto(
     string EndDate,
     int? CreatedBy,
     string Status,
-    List<CompetitionCriteriaDto> Criteria
+    List<CompetitionCriteriaDto> Criteria,
+    List<CompetitionAwardDto> Awards
 );
 
 public record CompetitionCriteriaDto(
@@ -29,7 +30,8 @@ public record CreateCompetitionRequest(
     string? Description,
     string StartDate,
     string EndDate,
-    List<CriteriaWeightRequest> Criteria
+    List<CriteriaWeightRequest> Criteria,
+    List<AwardRequest> Awards
 );
 
 public record UpdateCompetitionRequest(
@@ -37,7 +39,10 @@ public record UpdateCompetitionRequest(
     string? Description,
     string StartDate,
     string EndDate,
-    List<CriteriaWeightRequest> Criteria
+    List<CriteriaWeightRequest> Criteria,
+    List<AwardRequest> Awards
 );
+
+public record AwardRequest(string AwardName, string? Description);
 
 public record CriteriaWeightRequest(int CriteriaId, decimal WeightPercent);

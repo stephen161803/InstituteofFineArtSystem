@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Edit, Trash2, Search, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,6 +16,9 @@ export function ManageCustomers() {
   const [editingCustomer, setEditingCustomer] = useState<CustomerDto | null>(null);
   const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', address: '', notes: '' });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CustomerDto | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { loadCustomers(); }, []);
 
@@ -58,13 +61,23 @@ export function ManageCustomers() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Deactivate this customer?')) return;
+    setDeleteTarget(customers.find(c => c.id === id) ?? null);
+    setDeleteError('');
+  };
+
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError('');
     try {
-      await usersApi.deleteCustomer(id);
-      toast.success('Customer deactivated');
+      await usersApi.deleteCustomer(deleteTarget.id);
+      toast.success('Customer deleted');
+      setDeleteTarget(null);
       await loadCustomers();
-    } catch {
-      toast.error('Failed to deactivate customer');
+    } catch (err: any) {
+      setDeleteError(err.message ?? 'Failed to delete customer');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -81,6 +94,23 @@ export function ManageCustomers() {
       <div>
         <h1 className="text-3xl font-bold">Manage Customers</h1>
         <p className="text-slate-600">View and manage registered customers</p>
+      </div>
+
+      {/* Search bar */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+            <Input placeholder="Search by name, email, or phone..." value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <Card><CardContent className="p-4"><p className="text-xs text-slate-600 mb-1">Total Customers</p><p className="text-2xl font-bold text-purple-600">{customers.length}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-slate-600 mb-1">Search Results</p><p className="text-2xl font-bold text-blue-600">{filtered.length}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-slate-600 mb-1">With Purchases</p><p className="text-2xl font-bold text-green-600">{customers.filter(c => (c.purchaseCount ?? 0) > 0).length}</p></CardContent></Card>
       </div>
 
       {/* Edit Dialog */}
@@ -128,10 +158,6 @@ export function ManageCustomers() {
               <CardTitle className="flex items-center gap-2"><Users className="size-5" />All Customers</CardTitle>
               <CardDescription>{customers.length} registered customers</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Search className="size-4 text-slate-400" />
-              <Input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-xs" />
-            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -170,6 +196,28 @@ export function ManageCustomers() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Customer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.fullName}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{deleteError}</p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={doDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Trash2 className="size-4 mr-2" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

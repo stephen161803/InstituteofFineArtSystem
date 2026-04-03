@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { CompetitionAwardDto } from './awards';
 
 export interface CompetitionCriteriaDto {
   id: number;
@@ -18,6 +19,7 @@ export interface CompetitionDto {
   createdBy?: number;
   status: 'Upcoming' | 'Ongoing' | 'Completed';
   criteria: CompetitionCriteriaDto[];
+  awards: CompetitionAwardDto[];
 }
 
 export interface CriteriaDto {

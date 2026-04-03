@@ -91,9 +91,16 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(userId);
         if (user is null) return NotFound();
-        user.IsActive = false;
+
+        var hasReviews = await db.SubmissionReviews.AnyAsync(r => r.StaffId == userId);
+        if (hasReviews)
+            return BadRequest(new { message = "Cannot delete: this staff has reviewed submissions. Deactivate instead." });
+
+        var staff = await db.Staffs.FindAsync(userId);
+        if (staff is not null) db.Staffs.Remove(staff);
+        db.Users.Remove(user);
         await db.SaveChangesAsync();
-        return Ok(new { message = "Deactivated" });
+        return Ok(new { message = "Staff deleted successfully." });
     }
 
     // ── STUDENTS ───────────────────────────────────────────────────────────
@@ -183,15 +190,22 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(userId);
         if (user is null) return NotFound();
-        user.IsActive = false;
+
+        var hasSubmissions = await db.Submissions.AnyAsync(s => s.StudentId == userId);
+        if (hasSubmissions)
+            return BadRequest(new { message = "Cannot delete: this student has submissions." });
+
+        var student = await db.Students.FindAsync(userId);
+        if (student is not null) db.Students.Remove(student);
+        db.Users.Remove(user);
         await db.SaveChangesAsync();
-        return Ok(new { message = "Deactivated" });
+        return Ok(new { message = "Student deleted successfully." });
     }
 
     // ── CUSTOMERS ──────────────────────────────────────────────────────────
 
     [HttpGet("customers")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Staff,Manager")]
     public async Task<IActionResult> GetCustomers()
     {
         var list = await db.Customers
@@ -230,9 +244,15 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var customer = await db.Customers.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == customerId);
         if (customer is null) return NotFound();
-        customer.User.IsActive = false;
+
+        var hasSales = await db.Sales.AnyAsync(s => s.CustomerId == customerId);
+        if (hasSales)
+            return BadRequest(new { message = "Cannot delete: this customer has purchase records." });
+
+        db.Customers.Remove(customer);
+        db.Users.Remove(customer.User);
         await db.SaveChangesAsync();
-        return Ok(new { message = "Deactivated" });
+        return Ok(new { message = "Customer deleted successfully." });
     }
 
     // ── ADMIN / MANAGER USERS ─────────────────────────────────────────────
@@ -289,12 +309,18 @@ public class UsersController(AppDbContext db) : ControllerBase
     {
         var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         if (userId == currentUserId)
-            return BadRequest(new { message = "Cannot deactivate your own account" });
+            return BadRequest(new { message = "Cannot delete your own account." });
 
         var user = await db.Users.FindAsync(userId);
         if (user is null) return NotFound();
-        user.IsActive = false;
+
+        // Check if this admin/manager created any competitions
+        var hasCompetitions = await db.Competitions.AnyAsync(c => c.CreatedBy == userId);
+        if (hasCompetitions)
+            return BadRequest(new { message = "Cannot delete: this user has created competitions." });
+
+        db.Users.Remove(user);
         await db.SaveChangesAsync();
-        return Ok(new { message = "Deactivated" });
+        return Ok(new { message = "User deleted successfully." });
     }
 }

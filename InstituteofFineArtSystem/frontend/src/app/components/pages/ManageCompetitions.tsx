@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { competitionsApi, CompetitionDto, CriteriaDto } from '../../api/competitions';
+import { awardsApi, AwardDto } from '../../api/awards';
 import { submissionsApi, SubmissionDto } from '../../api/submissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -14,12 +15,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../ui/select';
-import { Plus, Edit, Trash2, Search, X, Loader2, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, X, Loader2, AlertTriangle, Trophy, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 type CompetitionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
 
 interface CriteriaWeight { criteriaId: number; weightPercent: number; }
+interface AwardEntry { awardName: string; description: string; }
 
 interface FormData {
   title: string;
@@ -27,16 +29,18 @@ interface FormData {
   startDate: string;
   endDate: string;
   criteria: CriteriaWeight[];
+  awards: AwardEntry[];
 }
 
 const defaultForm: FormData = {
-  title: '', description: '', startDate: '', endDate: '', criteria: [],
+  title: '', description: '', startDate: '', endDate: '', criteria: [], awards: [],
 };
 
 export function ManageCompetitions() {
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [allCriteria, setAllCriteria] = useState<CriteriaDto[]>([]);
+  const [allAwards, setAllAwards] = useState<AwardDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Ongoing' | 'Upcoming' | 'Completed'>('Ongoing');
@@ -46,22 +50,28 @@ export function ManageCompetitions() {
   const [showNewCriteria, setShowNewCriteria] = useState(false);
   const [newCriteriaName, setNewCriteriaName] = useState('');
   const [creatingCriteria, setCreatingCriteria] = useState(false);
+  const [showNewAward, setShowNewAward] = useState(false);
+  const [newAwardName, setNewAwardName] = useState('');
+  const [newAwardDesc, setNewAwardDesc] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<CompetitionDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [detailCompetition, setDetailCompetition] = useState<CompetitionDto | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [compsRes, subsRes, criteriaRes] = await Promise.all([
+      const [compsRes, subsRes, criteriaRes, awardsRes] = await Promise.all([
         competitionsApi.getAll(),
         submissionsApi.getAll(),
         competitionsApi.getCriteria(),
+        awardsApi.getAwards(),
       ]);
       setCompetitions(compsRes);
       setSubmissions(subsRes);
       setAllCriteria(criteriaRes);
+      setAllAwards(awardsRes);
     } catch {
       toast.error('Failed to load data');
     } finally {
@@ -79,6 +89,17 @@ export function ManageCompetitions() {
   // Criteria helpers
   const totalWeight = formData.criteria.reduce((s, c) => s + c.weightPercent, 0);
   const unusedCriteria = allCriteria.filter(c => !formData.criteria.find(fc => fc.criteriaId === c.id));
+
+  // Awards helpers
+  const unusedAwards = allAwards.filter(a => !formData.awards.find(fa => fa.awardName === a.awardName));
+
+  const addAwardFromTemplate = (awardName: string) => {
+    const template = allAwards.find(a => a.awardName === awardName);
+    setFormData(prev => ({
+      ...prev,
+      awards: [...prev.awards, { awardName, description: template?.description ?? '' }],
+    }));
+  };
 
   const addCriteria = (criteriaId: number) => {
     const remaining = 100 - totalWeight;
@@ -154,6 +175,7 @@ export function ManageCompetitions() {
       startDate: competition.startDate.slice(0, 10),
       endDate: competition.endDate.slice(0, 10),
       criteria: competition.criteria.map(c => ({ criteriaId: c.criteriaId, weightPercent: c.weightPercent })),
+      awards: competition.awards.map(a => ({ awardName: a.awardName, description: a.description ?? '' })),
     });
     setIsDialogOpen(true);
   };
@@ -179,6 +201,9 @@ export function ManageCompetitions() {
     setIsDialogOpen(false);
     setShowNewCriteria(false);
     setNewCriteriaName('');
+    setShowNewAward(false);
+    setNewAwardName('');
+    setNewAwardDesc('');
   };
 
   const getStatusColor = (status: string) => {
@@ -314,11 +339,88 @@ export function ManageCompetitions() {
                 )}
               </div>
 
+              {/* Awards section */}
+              <div className="space-y-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <Label className="font-semibold flex items-center gap-1.5">
+                  <Trophy className="size-4 text-yellow-600" />Awards
+                </Label>
+
+                {formData.awards.map((aw, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="flex-1 text-sm font-medium">🏆 {aw.awardName}</span>
+                    <span className="text-xs text-slate-500 flex-1 truncate">{aw.description}</span>
+                    <Button type="button" size="sm" variant="ghost"
+                      onClick={() => setFormData(prev => ({ ...prev, awards: prev.awards.filter((_, i) => i !== idx) }))}>
+                      <X className="size-3 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+
+                {formData.awards.length === 0 && (
+                  <p className="text-xs text-slate-400">No awards added.</p>
+                )}
+
+                {/* Pick from existing awards */}
+                {unusedAwards.length > 0 && (
+                  <Select onValueChange={v => addAwardFromTemplate(v)} value="">
+                    <SelectTrigger className="h-8 text-sm border-dashed">
+                      <SelectValue placeholder="+ Pick existing award..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unusedAwards.map(a => (
+                        <SelectItem key={a.id} value={a.awardName}>🏆 {a.awardName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Create new award */}
+                {!showNewAward ? (
+                  <button type="button" onClick={() => setShowNewAward(true)}
+                    className="text-xs text-yellow-700 hover:underline mt-1">
+                    + Create new award
+                  </button>
+                ) : (
+                  <div className="space-y-2 mt-1">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        autoFocus
+                        placeholder="Award name (e.g. Best Artwork)"
+                        value={newAwardName}
+                        onChange={e => setNewAwardName(e.target.value)}
+                        className="h-8 text-sm flex-1"
+                      />
+                      <Button type="button" size="sm" variant="ghost"
+                        onClick={() => { setShowNewAward(false); setNewAwardName(''); setNewAwardDesc(''); }}>
+                        <X className="size-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Description (optional)"
+                        value={newAwardDesc}
+                        onChange={e => setNewAwardDesc(e.target.value)}
+                        className="h-8 text-sm flex-1"
+                      />
+                      <Button type="button" size="sm"
+                        disabled={!newAwardName.trim() || !!formData.awards.find(a => a.awardName === newAwardName.trim())}
+                        onClick={() => {
+                          const name = newAwardName.trim();
+                          if (!name) return;
+                          setFormData(prev => ({ ...prev, awards: [...prev.awards, { awardName: name, description: newAwardDesc }] }));
+                          setNewAwardName(''); setNewAwardDesc(''); setShowNewAward(false);
+                        }}>
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
                 <Button type="submit">{editingCompetition ? 'Update' : 'Create'} Competition</Button>
-              </div>
-            </form>
+              </div>            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -381,8 +483,20 @@ export function ManageCompetitions() {
                             ))}
                           </div>
                         )}
+                        {competition.awards.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {competition.awards.map(a => (
+                              <Badge key={a.id} className="text-xs bg-yellow-100 text-yellow-800">
+                                🏆 {a.awardName}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2 ml-4">
+                        <Button size="sm" variant="outline" onClick={() => setDetailCompetition(competition)}>
+                          <Eye className="size-4" />
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => handleEdit(competition)}>
                           <Edit className="size-4" />
                         </Button>
@@ -403,6 +517,71 @@ export function ManageCompetitions() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!detailCompetition} onOpenChange={(open) => { if (!open) setDetailCompetition(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailCompetition?.title}</DialogTitle>
+            <DialogDescription className="flex items-center gap-2">
+              <Badge className={getStatusColor(detailCompetition?.status ?? '')}>{detailCompetition?.status}</Badge>
+              <span>{detailCompetition && new Date(detailCompetition.startDate).toLocaleDateString()} — {detailCompetition && new Date(detailCompetition.endDate).toLocaleDateString()}</span>
+            </DialogDescription>
+          </DialogHeader>
+          {detailCompetition && (
+            <div className="space-y-4">
+              {detailCompetition.description && (
+                <p className="text-sm text-slate-600">{detailCompetition.description}</p>
+              )}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Submissions</p>
+                  <p className="font-bold text-lg">{submissions.filter(s => s.competitionId === detailCompetition.id).length}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">Awards</p>
+                  <p className="font-bold text-lg">{detailCompetition.awards.length}</p>
+                </div>
+              </div>
+              {detailCompetition.criteria.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold mb-2">Scoring Criteria</p>
+                  <div className="space-y-1">
+                    {detailCompetition.criteria.map(c => (
+                      <div key={c.id} className="flex justify-between text-sm p-2 bg-slate-50 rounded">
+                        <span>{c.criteriaName}</span>
+                        <span className="font-medium text-purple-600">{c.weightPercent}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {detailCompetition.awards.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold mb-2">Awards</p>
+                  <div className="space-y-1">
+                    {detailCompetition.awards.map(a => (
+                      <div key={a.id} className="flex items-start gap-2 p-2 bg-yellow-50 rounded">
+                        <span>🏆</span>
+                        <div>
+                          <p className="text-sm font-medium">{a.awardName}</p>
+                          {a.description && <p className="text-xs text-slate-500">{a.description}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setDetailCompetition(null)}>Close</Button>
+                <Button onClick={() => { setDetailCompetition(null); handleEdit(detailCompetition); }}>
+                  <Edit className="size-4 mr-2" />Edit
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>

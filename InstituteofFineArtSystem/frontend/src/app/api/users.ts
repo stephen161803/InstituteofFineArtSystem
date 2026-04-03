@@ -48,7 +48,7 @@ export const usersApi = {
   getStaff: () => api.get<StaffDto[]>('/users/staff'),
   createStaff: (data: unknown) => api.post('/users/staff', data),
   updateStaff: (userId: number, data: unknown) => api.put(`/users/staff/${userId}`, data),
-  deleteStaff: (userId: number) => api.delete(`/users/staff/${userId}`),
+  deleteStaff: (userId: number) => api.delete<{ message: string }>(`/users/staff/${userId}`),
 
   getStudents: () => api.get<StudentDto[]>('/users/students'),
   createStudent: (data: unknown) => api.post('/users/students', data),

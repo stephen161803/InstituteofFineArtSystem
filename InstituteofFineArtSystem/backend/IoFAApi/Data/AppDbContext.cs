@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SubmissionReview> SubmissionReviews => Set<SubmissionReview>();
     public DbSet<GradeDetail> GradeDetails => Set<GradeDetail>();
     public DbSet<Award> Awards => Set<Award>();
+    public DbSet<CompetitionAward> CompetitionAwards => Set<CompetitionAward>();
     public DbSet<StudentAward> StudentAwards => Set<StudentAward>();
     public DbSet<Exhibition> Exhibitions => Set<Exhibition>();
     public DbSet<ExhibitionSubmission> ExhibitionSubmissions => Set<ExhibitionSubmission>();
@@ -82,11 +83,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<GradeDetail>()
             .Property(g => g.RawScore).HasColumnType("decimal(5,2)");
 
+        // CompetitionAward
+        mb.Entity<CompetitionAward>()
+            .HasOne(ca => ca.Competition).WithMany(c => c.CompetitionAwards).HasForeignKey(ca => ca.CompetitionId);
+
         // StudentAward
         mb.Entity<StudentAward>()
             .HasOne(sa => sa.Submission).WithMany(s => s.StudentAwards).HasForeignKey(sa => sa.SubmissionId);
         mb.Entity<StudentAward>()
-            .HasOne(sa => sa.Award).WithMany(a => a.StudentAwards).HasForeignKey(sa => sa.AwardId);
+            .HasOne(sa => sa.CompetitionAward).WithMany(a => a.StudentAwards).HasForeignKey(sa => sa.CompetitionAwardId);
         mb.Entity<StudentAward>()
             .HasOne(sa => sa.AwardedByUser).WithMany().HasForeignKey(sa => sa.AwardedBy);
         mb.Entity<StudentAward>()

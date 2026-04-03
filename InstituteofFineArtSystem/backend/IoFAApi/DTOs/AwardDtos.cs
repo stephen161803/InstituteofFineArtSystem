@@ -1,11 +1,14 @@
 namespace IoFAApi.DTOs;
 
 public record AwardDto(int Id, string AwardName, string? Description);
+public record CreateAwardRequest(string AwardName, string? Description);
+
+public record CompetitionAwardDto(int Id, int CompetitionId, string AwardName, string? Description);
 
 public record StudentAwardDto(
     int Id,
     int SubmissionId,
-    int AwardId,
+    int CompetitionAwardId,
     string? AwardName,
     int AwardedBy,
     string AwardedDate,
@@ -14,4 +17,5 @@ public record StudentAwardDto(
     string? SubmissionTitle
 );
 
-public record CreateStudentAwardRequest(int SubmissionId, int AwardId);
+public record CreateCompetitionAwardRequest(string AwardName, string? Description);
+public record CreateStudentAwardRequest(int SubmissionId, int CompetitionAwardId);

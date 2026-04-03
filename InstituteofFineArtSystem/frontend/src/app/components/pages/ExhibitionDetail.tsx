@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { exhibitionsApi, ExhibitionDto, ExhibitionSubmissionDto } from '../../api/exhibitions';
+import { usersApi, CustomerDto } from '../../api/users';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
-import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ArrowLeft, DollarSign, Calendar, MapPin, FileText, ShoppingCart, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,8 +20,10 @@ export function ExhibitionDetail() {
   const [selectedArtwork, setSelectedArtwork] = useState<ExhibitionSubmissionDto | null>(null);
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saleForm, setSaleForm] = useState({ soldPrice: '', customerName: '', customerContact: '', remarks: '' });
+  const [saleForm, setSaleForm] = useState({ soldPrice: '', customerId: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [customers, setCustomers] = useState<CustomerDto[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   useEffect(() => {
     exhibitionsApi.getById(Number(id))
@@ -52,16 +55,27 @@ export function ExhibitionDetail() {
 
   const openSaleDialog = (es: ExhibitionSubmissionDto) => {
     setSelectedArtwork(es);
-    setSaleForm({ soldPrice: es.proposedPrice.toString(), customerName: '', customerContact: '', remarks: '' });
+    setSaleForm({ soldPrice: es.proposedPrice.toString(), customerId: '' });
     setErrors({});
     setIsSaleDialogOpen(true);
+    // Load customers when dialog opens
+    setLoadingCustomers(true);
+    usersApi.getCustomers()
+      .then(setCustomers)
+      .catch(() => toast.error('Failed to load customers'))
+      .finally(() => setLoadingCustomers(false));
   };
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!saleForm.soldPrice || isNaN(Number(saleForm.soldPrice)) || Number(saleForm.soldPrice) <= 0) errs.soldPrice = 'Enter a valid price';
-    if (!saleForm.customerName.trim()) errs.customerName = 'Customer name is required';
-    if (!saleForm.customerContact.trim()) errs.customerContact = 'Contact is required';
+    const price = Number(saleForm.soldPrice);
+    const proposed = selectedArtwork?.proposedPrice ?? 0;
+    if (!saleForm.soldPrice || isNaN(price) || price <= 0)
+      errs.soldPrice = 'Enter a valid price';
+    else if (price < proposed)
+      errs.soldPrice = `Sold price must be at least $${proposed.toLocaleString('en-US')}`;
+    if (!saleForm.customerId)
+      errs.customerId = 'Please select a customer';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -71,10 +85,9 @@ export function ExhibitionDetail() {
     if (!selectedArtwork || !validate()) return;
     setSaving(true);
     try {
-      // In a real app, we'd look up the customer by contact. For now use customerId=1 as placeholder.
       await exhibitionsApi.createSale({
         exhibitionSubmissionId: selectedArtwork.id,
-        customerId: 1,
+        customerId: Number(saleForm.customerId),
         soldPrice: Number(saleForm.soldPrice),
       });
       // Refresh exhibition data
@@ -166,27 +179,50 @@ export function ExhibitionDetail() {
               <Input value={selectedArtwork?.submissionTitle || ''} disabled />
             </div>
             <div className="space-y-2">
+              <Label>Customer *</Label>
+              {loadingCustomers ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Loader2 className="size-4 animate-spin" />Loading customers...
+                </div>
+              ) : customers.length === 0 ? (
+                <p className="text-sm text-amber-600 p-2 bg-amber-50 rounded">
+                  ⚠️ No customers found. Please add customers in Manage Customers first.
+                </p>
+              ) : (
+                <Select value={saleForm.customerId} onValueChange={v => setSaleForm({ ...saleForm, customerId: v })}>
+                  <SelectTrigger className={errors.customerId ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.fullName}{c.phone ? ` — ${c.phone}` : ''}{c.email ? ` (${c.email})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {errors.customerId && <p className="text-xs text-red-500">{errors.customerId}</p>}
+            </div>
+            <div className="space-y-2">
               <Label>Sold Price *</Label>
-              <Input type="number" placeholder="Enter sold price" value={saleForm.soldPrice} onChange={(e) => setSaleForm({ ...saleForm, soldPrice: e.target.value })} className={errors.soldPrice ? 'border-red-500' : ''} />
+              <p className="text-xs text-slate-500">
+                Proposed price: <span className="font-semibold text-purple-600">${Number(selectedArtwork?.proposedPrice ?? 0).toLocaleString('en-US')}</span>
+                {' '}— sold price must be at least this amount.
+              </p>
+              <Input
+                type="number"
+                placeholder={`Min: $${Number(selectedArtwork?.proposedPrice ?? 0).toLocaleString('en-US')}`}
+                min={selectedArtwork?.proposedPrice}
+                value={saleForm.soldPrice}
+                onChange={(e) => setSaleForm({ ...saleForm, soldPrice: e.target.value })}
+                className={errors.soldPrice ? 'border-red-500' : ''}
+              />
               {errors.soldPrice && <p className="text-xs text-red-500">{errors.soldPrice}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>Customer Name *</Label>
-              <Input placeholder="Enter customer name" value={saleForm.customerName} onChange={(e) => setSaleForm({ ...saleForm, customerName: e.target.value })} className={errors.customerName ? 'border-red-500' : ''} />
-              {errors.customerName && <p className="text-xs text-red-500">{errors.customerName}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>Customer Contact *</Label>
-              <Input placeholder="Phone or email" value={saleForm.customerContact} onChange={(e) => setSaleForm({ ...saleForm, customerContact: e.target.value })} className={errors.customerContact ? 'border-red-500' : ''} />
-              {errors.customerContact && <p className="text-xs text-red-500">{errors.customerContact}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label>Remarks</Label>
-              <Textarea placeholder="Any additional notes..." value={saleForm.remarks} onChange={(e) => setSaleForm({ ...saleForm, remarks: e.target.value })} rows={3} />
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsSaleDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || customers.length === 0}>
                 {saving && <Loader2 className="size-4 mr-2 animate-spin" />}Confirm Sale
               </Button>
             </div>

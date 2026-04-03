@@ -76,6 +76,20 @@ export function ViewCompetitions() {
               </div>
             </div>
           </div>
+          {competition.criteria.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {competition.criteria.map(c => (
+                  <Badge key={c.id} variant="outline" className="text-xs">{c.criteriaName} {c.weightPercent}%</Badge>
+                ))}
+              </div>
+            )}
+            {competition.awards.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {competition.awards.map(a => (
+                  <Badge key={a.id} className="text-xs bg-yellow-100 text-yellow-800">🏆 {a.awardName}</Badge>
+                ))}
+              </div>
+            )}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t">
             <span className="text-sm text-slate-600">{submissionCounts[competition.id] ?? 0} submissions received</span>
             <div className="flex items-center gap-2 flex-wrap">
@@ -94,8 +108,7 @@ export function ViewCompetitions() {
                 </>
               )}
             </div>
-          </div>
-        </CardContent>
+          </div>        </CardContent>
       </Card>
     );
   };
