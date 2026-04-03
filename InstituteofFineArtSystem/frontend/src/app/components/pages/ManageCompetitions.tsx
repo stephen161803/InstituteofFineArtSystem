@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 type CompetitionStatus = 'Upcoming' | 'Ongoing' | 'Completed';
 
 interface CriteriaWeight { criteriaId: number; weightPercent: number; }
-interface AwardEntry { awardName: string; description: string; }
+interface AwardEntry { awardId: number; }
 
 interface FormData {
   title: string;
@@ -33,7 +33,8 @@ interface FormData {
 }
 
 const defaultForm: FormData = {
-  title: '', description: '', startDate: '', endDate: '', criteria: [], awards: [],
+  title: '', description: '', startDate: '', endDate: '', criteria: [],
+  awards: [],
 };
 
 export function ManageCompetitions() {
@@ -50,9 +51,6 @@ export function ManageCompetitions() {
   const [showNewCriteria, setShowNewCriteria] = useState(false);
   const [newCriteriaName, setNewCriteriaName] = useState('');
   const [creatingCriteria, setCreatingCriteria] = useState(false);
-  const [showNewAward, setShowNewAward] = useState(false);
-  const [newAwardName, setNewAwardName] = useState('');
-  const [newAwardDesc, setNewAwardDesc] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<CompetitionDto | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [detailCompetition, setDetailCompetition] = useState<CompetitionDto | null>(null);
@@ -91,14 +89,14 @@ export function ManageCompetitions() {
   const unusedCriteria = allCriteria.filter(c => !formData.criteria.find(fc => fc.criteriaId === c.id));
 
   // Awards helpers
-  const unusedAwards = allAwards.filter(a => !formData.awards.find(fa => fa.awardName === a.awardName));
+  const unusedAwards = allAwards.filter(a => !formData.awards.find(fa => fa.awardId === a.id));
 
-  const addAwardFromTemplate = (awardName: string) => {
-    const template = allAwards.find(a => a.awardName === awardName);
-    setFormData(prev => ({
-      ...prev,
-      awards: [...prev.awards, { awardName, description: template?.description ?? '' }],
-    }));
+  const addAward = (awardId: number) => {
+    setFormData(prev => ({ ...prev, awards: [...prev.awards, { awardId }] }));
+  };
+
+  const removeAward = (awardId: number) => {
+    setFormData(prev => ({ ...prev, awards: prev.awards.filter(a => a.awardId !== awardId) }));
   };
 
   const addCriteria = (criteriaId: number) => {
@@ -175,7 +173,7 @@ export function ManageCompetitions() {
       startDate: competition.startDate.slice(0, 10),
       endDate: competition.endDate.slice(0, 10),
       criteria: competition.criteria.map(c => ({ criteriaId: c.criteriaId, weightPercent: c.weightPercent })),
-      awards: competition.awards.map(a => ({ awardName: a.awardName, description: a.description ?? '' })),
+      awards: competition.awards.map(a => ({ awardId: a.awardId })),
     });
     setIsDialogOpen(true);
   };
@@ -201,9 +199,6 @@ export function ManageCompetitions() {
     setIsDialogOpen(false);
     setShowNewCriteria(false);
     setNewCriteriaName('');
-    setShowNewAward(false);
-    setNewAwardName('');
-    setNewAwardDesc('');
   };
 
   const getStatusColor = (status: string) => {
@@ -228,7 +223,18 @@ export function ManageCompetitions() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
+            <Button onClick={() => {
+              // Default 3 awards when creating new competition
+              const firstPrize = allAwards.find(a => a.awardName === 'First Prize');
+              const secondPrize = allAwards.find(a => a.awardName === 'Second Prize');
+              const thirdPrize = allAwards.find(a => a.awardName === 'Third Prize');
+              const defaultAwards = [firstPrize, secondPrize, thirdPrize]
+                .filter(Boolean)
+                .map(a => ({ awardId: a!.id }));
+              setFormData({ ...defaultForm, awards: defaultAwards });
+              setEditingCompetition(null);
+              setIsDialogOpen(true);
+            }}>
               <Plus className="size-4 mr-2" />Add Competition
             </Button>
           </DialogTrigger>
@@ -345,75 +351,32 @@ export function ManageCompetitions() {
                   <Trophy className="size-4 text-yellow-600" />Awards
                 </Label>
 
-                {formData.awards.map((aw, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="flex-1 text-sm font-medium">🏆 {aw.awardName}</span>
-                    <span className="text-xs text-slate-500 flex-1 truncate">{aw.description}</span>
-                    <Button type="button" size="sm" variant="ghost"
-                      onClick={() => setFormData(prev => ({ ...prev, awards: prev.awards.filter((_, i) => i !== idx) }))}>
-                      <X className="size-3 text-red-500" />
-                    </Button>
-                  </div>
-                ))}
+                {/* Selected awards */}
+                <div className="flex flex-wrap gap-1.5">
+                  {formData.awards.map(fa => {
+                    const award = allAwards.find(a => a.id === fa.awardId);
+                    return (
+                      <span key={fa.awardId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-300">
+                        🏆 {award?.awardName ?? fa.awardId}
+                        <button type="button" onClick={() => removeAward(fa.awardId)} className="ml-0.5 hover:text-red-600">×</button>
+                      </span>
+                    );
+                  })}
+                  {formData.awards.length === 0 && <p className="text-xs text-slate-400">No awards selected.</p>}
+                </div>
 
-                {formData.awards.length === 0 && (
-                  <p className="text-xs text-slate-400">No awards added.</p>
-                )}
-
-                {/* Pick from existing awards */}
+                {/* Add from existing */}
                 {unusedAwards.length > 0 && (
-                  <Select onValueChange={v => addAwardFromTemplate(v)} value="">
+                  <Select onValueChange={v => addAward(Number(v))} value="">
                     <SelectTrigger className="h-8 text-sm border-dashed">
-                      <SelectValue placeholder="+ Pick existing award..." />
+                      <SelectValue placeholder="+ Add award..." />
                     </SelectTrigger>
                     <SelectContent>
                       {unusedAwards.map(a => (
-                        <SelectItem key={a.id} value={a.awardName}>🏆 {a.awardName}</SelectItem>
+                        <SelectItem key={a.id} value={String(a.id)}>🏆 {a.awardName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                )}
-
-                {/* Create new award */}
-                {!showNewAward ? (
-                  <button type="button" onClick={() => setShowNewAward(true)}
-                    className="text-xs text-yellow-700 hover:underline mt-1">
-                    + Create new award
-                  </button>
-                ) : (
-                  <div className="space-y-2 mt-1">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        autoFocus
-                        placeholder="Award name (e.g. Best Artwork)"
-                        value={newAwardName}
-                        onChange={e => setNewAwardName(e.target.value)}
-                        className="h-8 text-sm flex-1"
-                      />
-                      <Button type="button" size="sm" variant="ghost"
-                        onClick={() => { setShowNewAward(false); setNewAwardName(''); setNewAwardDesc(''); }}>
-                        <X className="size-3" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        placeholder="Description (optional)"
-                        value={newAwardDesc}
-                        onChange={e => setNewAwardDesc(e.target.value)}
-                        className="h-8 text-sm flex-1"
-                      />
-                      <Button type="button" size="sm"
-                        disabled={!newAwardName.trim() || !!formData.awards.find(a => a.awardName === newAwardName.trim())}
-                        onClick={() => {
-                          const name = newAwardName.trim();
-                          if (!name) return;
-                          setFormData(prev => ({ ...prev, awards: [...prev.awards, { awardName: name, description: newAwardDesc }] }));
-                          setNewAwardName(''); setNewAwardDesc(''); setShowNewAward(false);
-                        }}>
-                        Add
-                      </Button>
-                    </div>
-                  </div>
                 )}
               </div>
 
@@ -491,8 +454,7 @@ export function ManageCompetitions() {
                               </Badge>
                             ))}
                           </div>
-                        )}
-                      </div>
+                        )}                      </div>
                       <div className="flex gap-2 ml-4">
                         <Button size="sm" variant="outline" onClick={() => setDetailCompetition(competition)}>
                           <Eye className="size-4" />

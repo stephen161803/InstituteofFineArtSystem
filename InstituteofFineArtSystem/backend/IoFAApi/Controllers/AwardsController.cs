@@ -46,7 +46,7 @@ public class AwardsController(AppDbContext db) : ControllerBase
         var q = db.StudentAwards
             .Include(sa => sa.Submission).ThenInclude(s => s.Student)
             .Include(sa => sa.Submission).ThenInclude(s => s.Competition)
-            .Include(sa => sa.CompetitionAward)
+            .Include(sa => sa.CompetitionAward).ThenInclude(ca => ca.Award)
             .AsQueryable();
 
         if (submissionId.HasValue) q = q.Where(sa => sa.SubmissionId == submissionId.Value);
@@ -61,7 +61,7 @@ public class AwardsController(AppDbContext db) : ControllerBase
 
         var list = await q.ToListAsync();
         return Ok(list.Select(sa => new StudentAwardDto(
-            sa.Id, sa.SubmissionId, sa.CompetitionAwardId, sa.CompetitionAward.AwardName,
+            sa.Id, sa.SubmissionId, sa.CompetitionAwardId, sa.CompetitionAward.Award.AwardName,
             sa.AwardedBy, sa.AwardedDate.ToString("yyyy-MM-dd"),
             sa.Submission.Student.FullName,
             sa.Submission.Competition.Title,

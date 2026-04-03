@@ -20,7 +20,8 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
             cc.Id, cc.CompetitionId, cc.CriteriaId, cc.WeightPercent,
             cc.Criteria.CriteriaCode, cc.Criteria.CriteriaName)).ToList(),
         c.CompetitionAwards.Select(ca => new CompetitionAwardDto(
-            ca.Id, ca.CompetitionId, ca.AwardName, ca.Description)).ToList()
+            ca.Id, ca.CompetitionId, ca.AwardId,
+            ca.Award.AwardName, ca.Award.Description)).ToList()
     );
 
     [HttpGet]
@@ -38,7 +39,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
 
         var list = await db.Competitions
             .Include(c => c.CompetitionCriteria).ThenInclude(cc => cc.Criteria)
-            .Include(c => c.CompetitionAwards)
+            .Include(c => c.CompetitionAwards).ThenInclude(ca => ca.Award)
             .Where(c => !c.IsDeleted)
             .OrderByDescending(c => c.StartDate)
             .ToListAsync();
@@ -50,7 +51,7 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
     {
         var c = await db.Competitions
             .Include(c => c.CompetitionCriteria).ThenInclude(cc => cc.Criteria)
-            .Include(c => c.CompetitionAwards)
+            .Include(c => c.CompetitionAwards).ThenInclude(ca => ca.Award)
             .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         return c is null ? NotFound() : Ok(ToDto(c));
     }
@@ -122,23 +123,17 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
 
         foreach (var aw in req.Awards)
         {
-            // If award doesn't exist in global Awards table, create it
-            var existing = await db.Awards.FirstOrDefaultAsync(a => a.AwardName == aw.AwardName);
-            if (existing is null)
-            {
-                existing = new Award { AwardName = aw.AwardName, Description = aw.Description };
-                db.Awards.Add(existing);
-                await db.SaveChangesAsync();
-            }
-            db.CompetitionAwards.Add(new CompetitionAward
-                { CompetitionId = comp.Id, AwardName = aw.AwardName, Description = aw.Description });
+            var award = await db.Awards.FindAsync(aw.AwardId);
+            if (award is null) return BadRequest(new { message = $"Award ID {aw.AwardId} not found" });
+            db.CompetitionAwards.Add(new CompetitionAward { CompetitionId = comp.Id, AwardId = aw.AwardId });
         }
 
         await db.SaveChangesAsync();
 
         await db.Entry(comp).Collection(c => c.CompetitionCriteria).Query()
             .Include(cc => cc.Criteria).LoadAsync();
-        await db.Entry(comp).Collection(c => c.CompetitionAwards).LoadAsync();
+        await db.Entry(comp).Collection(c => c.CompetitionAwards).Query()
+            .Include(ca => ca.Award).LoadAsync();
         return Ok(ToDto(comp));
     }
 
@@ -195,21 +190,16 @@ public class CompetitionsController(AppDbContext db) : ControllerBase
         db.CompetitionAwards.RemoveRange(comp.CompetitionAwards);
         foreach (var aw in req.Awards)
         {
-            var existing = await db.Awards.FirstOrDefaultAsync(a => a.AwardName == aw.AwardName);
-            if (existing is null)
-            {
-                existing = new Award { AwardName = aw.AwardName, Description = aw.Description };
-                db.Awards.Add(existing);
-                await db.SaveChangesAsync();
-            }
-            db.CompetitionAwards.Add(new CompetitionAward
-                { CompetitionId = comp.Id, AwardName = aw.AwardName, Description = aw.Description });
+            var award = await db.Awards.FindAsync(aw.AwardId);
+            if (award is null) return BadRequest(new { message = $"Award ID {aw.AwardId} not found" });
+            db.CompetitionAwards.Add(new CompetitionAward { CompetitionId = comp.Id, AwardId = aw.AwardId });
         }
 
         await db.SaveChangesAsync();
         await db.Entry(comp).Collection(c => c.CompetitionCriteria).Query()
             .Include(cc => cc.Criteria).LoadAsync();
-        await db.Entry(comp).Collection(c => c.CompetitionAwards).LoadAsync();
+        await db.Entry(comp).Collection(c => c.CompetitionAwards).Query()
+            .Include(ca => ca.Award).LoadAsync();
         return Ok(ToDto(comp));
     }
 

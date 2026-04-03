@@ -189,7 +189,7 @@ GO
 -- ============================================================
 -- 5. TRG_Notif_AwardGranted
 --    Notifies student when award is granted
---    Uses CompetitionAwardId (new schema)
+--    Uses CompetitionAwardId → Awards join for name
 -- ============================================================
 CREATE TRIGGER [dbo].[TRG_Notif_AwardGranted]
 ON [dbo].[StudentAwards]
@@ -203,13 +203,14 @@ BEGIN
         s.StudentId,
         'award',
         N'Congratulations! Award Won',
-        N'You won "' + ca.AwardName + N'" for your submission "' + ISNULL(s.Title, N'Untitled') + N'".',
+        N'You won "' + a.AwardName + N'" for your submission "' + ISNULL(s.Title, N'Untitled') + N'".',
         N'/dashboard/my-awards',
         s.Id,
         s.CompetitionId
     FROM inserted i
-    JOIN Submissions s       ON s.Id  = i.SubmissionId
-    JOIN CompetitionAwards ca ON ca.Id = i.CompetitionAwardId;
+    JOIN Submissions s        ON s.Id  = i.SubmissionId
+    JOIN CompetitionAwards ca ON ca.Id = i.CompetitionAwardId
+    JOIN Awards a             ON a.Id  = ca.AwardId;
 END;
 GO
 ALTER TABLE [dbo].[StudentAwards] ENABLE TRIGGER [TRG_Notif_AwardGranted]

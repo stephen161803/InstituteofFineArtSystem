@@ -86,6 +86,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // CompetitionAward
         mb.Entity<CompetitionAward>()
             .HasOne(ca => ca.Competition).WithMany(c => c.CompetitionAwards).HasForeignKey(ca => ca.CompetitionId);
+        mb.Entity<CompetitionAward>()
+            .HasOne(ca => ca.Award).WithMany(a => a.CompetitionAwards).HasForeignKey(ca => ca.AwardId);
 
         // StudentAward
         mb.Entity<StudentAward>()

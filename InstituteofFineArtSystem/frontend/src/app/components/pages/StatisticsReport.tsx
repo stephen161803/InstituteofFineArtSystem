@@ -7,7 +7,9 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, Award, Users, Trophy, Image as ImageIcon, Download, DollarSign, BarChart3, Loader2 } from 'lucide-react';
+import { TrendingUp, Award, Users, Trophy, Image as ImageIcon, Download, DollarSign, BarChart3, Loader2, Calendar } from 'lucide-react';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { competitionsApi, CompetitionDto } from '../../api/competitions';
 import { submissionsApi, SubmissionDto } from '../../api/submissions';
 import { awardsApi, StudentAwardDto } from '../../api/awards';
@@ -16,7 +18,8 @@ import { usersApi, StudentDto } from '../../api/users';
 import { toast } from 'sonner';
 
 export function StatisticsReport() {
-  const [timeRange, setTimeRange] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [studentAwards, setStudentAwards] = useState<StudentAwardDto[]>([]);
@@ -46,28 +49,49 @@ export function StatisticsReport() {
     );
   }
 
-  const allExhibitionSubs = exhibitions.flatMap((e) => e.submissions);
-  const allSales = allExhibitionSubs.filter((es) => es.sale).map((es) => es.sale!);
+  // Apply date filter
+  const from = dateFrom ? new Date(dateFrom) : null;
+  const to = dateTo ? new Date(dateTo + 'T23:59:59') : null;
 
-  const totalCompetitions = competitions.length;
-  const ongoingCompetitions = competitions.filter((c) => c.status === 'Ongoing').length;
-  const completedCompetitions = competitions.filter((c) => c.status === 'Completed').length;
-  const totalSubmissions = submissions.length;
-  const totalAwards = studentAwards.length;
-  const totalExhibitions = exhibitions.length;
+  const filteredSubmissions = submissions.filter(s => {
+    const d = new Date(s.submittedAt);
+    return (!from || d >= from) && (!to || d <= to);
+  });
+  const filteredCompetitions = competitions.filter(c => {
+    const d = new Date(c.startDate);
+    return (!from || d >= from) && (!to || d <= to);
+  });
+  const filteredAwards = studentAwards.filter(a => {
+    const d = new Date(a.awardedDate);
+    return (!from || d >= from) && (!to || d <= to);
+  });
+  const filteredExhibitions = exhibitions.filter(e => {
+    if (!e.startDate) return true;
+    const d = new Date(e.startDate);
+    return (!from || d >= from) && (!to || d <= to);
+  });
+
+  const allExhibitionSubs = filteredExhibitions.flatMap((e) => e.submissions);
+
+  const totalCompetitions = filteredCompetitions.length;
+  const ongoingCompetitions = filteredCompetitions.filter((c) => c.status === 'Ongoing').length;
+  const completedCompetitions = filteredCompetitions.filter((c) => c.status === 'Completed').length;
+  const totalSubmissions = filteredSubmissions.length;
+  const totalAwards = filteredAwards.length;
+  const totalExhibitions = filteredExhibitions.length;
   const totalStudents = students.length;
 
   const ratingCounts = {
-    Best:    submissions.filter((s) => s.review?.ratingLevel === 'Best').length,
-    Better:  submissions.filter((s) => s.review?.ratingLevel === 'Better').length,
-    Good:    submissions.filter((s) => s.review?.ratingLevel === 'Good').length,
-    pending: submissions.filter((s) => !s.review).length,
+    Best:    filteredSubmissions.filter((s) => s.review?.ratingLevel === 'Best').length,
+    Better:  filteredSubmissions.filter((s) => s.review?.ratingLevel === 'Better').length,
+    Good:    filteredSubmissions.filter((s) => s.review?.ratingLevel === 'Good').length,
+    pending: filteredSubmissions.filter((s) => !s.review).length,
   };
 
-  const competitionData = competitions.map((comp) => ({
+  const competitionData = filteredCompetitions.map((comp) => ({
     name: comp.title.substring(0, 20) + (comp.title.length > 20 ? '...' : ''),
-    submissions: submissions.filter((s) => s.competitionId === comp.id).length,
-    awards: studentAwards.filter((a) => a.competitionTitle === comp.title).length,
+    submissions: filteredSubmissions.filter((s) => s.competitionId === comp.id).length,
+    awards: filteredAwards.filter((a) => a.competitionTitle === comp.title).length,
   }));
 
   const ratingData = [
@@ -78,8 +102,8 @@ export function StatisticsReport() {
   ];
 
   const studentPerformance = students.map((student) => {
-    const studentSubs = submissions.filter((s) => s.studentId === student.userId);
-    const studentAwardCount = studentAwards.filter((a) => studentSubs.some((s) => s.id === a.submissionId)).length;
+    const studentSubs = filteredSubmissions.filter((s) => s.studentId === student.userId);
+    const studentAwardCount = filteredAwards.filter((a) => studentSubs.some((s) => s.id === a.submissionId)).length;
     const bestRatings = studentSubs.filter((s) => s.review?.ratingLevel === 'Best').length;
     return {
       name: student.fullName,
@@ -90,7 +114,7 @@ export function StatisticsReport() {
     };
   }).sort((a, b) => b.awards - a.awards);
 
-  const exhibitionSales = exhibitions.map((exh) => {
+  const exhibitionSales = filteredExhibitions.map((exh) => {
     const exhSubs = exh.submissions;
     const sold = exhSubs.filter((es) => es.status === 'Sold').length;
     const totalRevenue = exhSubs.filter((es) => es.sale).reduce((sum, es) => sum + (es.sale?.soldPrice ?? 0), 0);
@@ -104,7 +128,7 @@ export function StatisticsReport() {
 
   const monthlyTrend = (() => {
     const counts: Record<string, number> = {};
-    submissions.forEach((s) => {
+    filteredSubmissions.forEach((s) => {
       const d = new Date(s.submittedAt);
       const key = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       counts[key] = (counts[key] ?? 0) + 1;
@@ -117,7 +141,8 @@ export function StatisticsReport() {
   const handleExportReport = () => {
     const reportData = {
       generatedAt: new Date().toISOString(),
-      timeRange,
+      dateFrom: dateFrom || 'All time',
+      dateTo: dateTo || 'All time',
       summary: { totalCompetitions, ongoingCompetitions, completedCompetitions, totalSubmissions, totalAwards, totalExhibitions, totalStudents },
       competitionData, studentPerformance, exhibitionSales, ratingDistribution: ratingCounts,
     };
@@ -139,19 +164,23 @@ export function StatisticsReport() {
           <p className="text-sm sm:text-base text-slate-600">Comprehensive analytics and performance metrics</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Time range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={handleExportReport} variant="outline" className="shrink-0">
-            <Download className="size-4 mr-2" />Export Report
+          <div className="flex items-center gap-1.5">
+            <Calendar className="size-4 text-slate-400" />
+            <Label className="text-xs text-slate-500 whitespace-nowrap">From</Label>
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 text-sm w-36" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Label className="text-xs text-slate-500 whitespace-nowrap">To</Label>
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 text-sm w-36" />
+          </div>
+          {(dateFrom || dateTo) && (
+            <Button size="sm" variant="ghost" className="h-8 text-xs text-slate-500"
+              onClick={() => { setDateFrom(''); setDateTo(''); }}>
+              Clear
+            </Button>
+          )}
+          <Button onClick={handleExportReport} variant="outline" size="sm" className="shrink-0">
+            <Download className="size-4 mr-2" />Export
           </Button>
         </div>
       </div>

@@ -43,6 +43,6 @@ public record UpdateCompetitionRequest(
     List<AwardRequest> Awards
 );
 
-public record AwardRequest(string AwardName, string? Description);
+public record AwardRequest(int AwardId);
 
 public record CriteriaWeightRequest(int CriteriaId, decimal WeightPercent);

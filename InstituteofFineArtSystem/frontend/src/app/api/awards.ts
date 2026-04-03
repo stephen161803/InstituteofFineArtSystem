@@ -9,6 +9,7 @@ export interface AwardDto {
 export interface CompetitionAwardDto {
   id: number;
   competitionId: number;
+  awardId: number;
   awardName: string;
   description?: string;
 }

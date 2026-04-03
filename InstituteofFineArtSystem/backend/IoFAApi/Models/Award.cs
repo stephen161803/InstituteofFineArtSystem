@@ -6,5 +6,5 @@ public class Award
     public string AwardName { get; set; } = string.Empty;
     public string? Description { get; set; }
 
-    public ICollection<StudentAward> StudentAwards { get; set; } = [];
+    public ICollection<CompetitionAward> CompetitionAwards { get; set; } = [];
 }
