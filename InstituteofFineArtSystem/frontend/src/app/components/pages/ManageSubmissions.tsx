@@ -333,9 +333,15 @@ export function ManageSubmissions() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-400">
-                    Rating is auto-calculated from scores above.
-                  </p>
+                  
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="text-xs text-slate-400">Scale:</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">Best ≥90</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Better ≥80</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">Good ≥70</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">Moderate ≥60</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">Normal &lt;60</span>
+                  </div>
                 </div>
               )}
 
