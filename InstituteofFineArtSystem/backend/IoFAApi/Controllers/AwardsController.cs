@@ -77,6 +77,13 @@ public class AwardsController(AppDbContext db) : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == req.SubmissionId);
         if (submission is null) return NotFound(new { message = "Submission not found" });
 
+        // Check all submissions in this competition have been reviewed
+        var unreviewed = await db.Submissions
+            .Where(s => s.CompetitionId == submission.CompetitionId)
+            .CountAsync(s => !db.SubmissionReviews.Any(r => r.SubmissionId == s.Id));
+        if (unreviewed > 0)
+            return BadRequest(new { message = $"Cannot grant award: {unreviewed} submission(s) in this competition have not been reviewed yet." });
+
         var competitionAward = await db.CompetitionAwards.FindAsync(req.CompetitionAwardId);
         if (competitionAward is null) return NotFound(new { message = "Award not found" });
 

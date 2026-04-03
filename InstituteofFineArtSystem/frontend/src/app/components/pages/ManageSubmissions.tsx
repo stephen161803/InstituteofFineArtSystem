@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router';
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
 import { competitionsApi, type CompetitionDto, type CompetitionCriteriaDto } from '../../api/competitions';
 import { usersApi, type StudentDto } from '../../api/users';
-import { awardsApi, type StudentAwardDto } from '../../api/awards';
-import { exhibitionsApi, type ExhibitionSubmissionDto } from '../../api/exhibitions';
+import { awardsApi } from '../../api/awards';
+import { exhibitionsApi } from '../../api/exhibitions';
 import { RatingLevel } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -33,7 +34,10 @@ export function ManageSubmissions() {
   const [exhibitedSubmissionIds, setExhibitedSubmissionIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [competitionFilter, setCompetitionFilter] = useState<string>('all');
+  const [searchParams] = useSearchParams();
+  const [competitionFilter, setCompetitionFilter] = useState<string>(
+    searchParams.get('competitionId') ?? 'all'
+  );
   const [ratingFilter, setRatingFilter] = useState<RatingLevel | 'all' | 'unrated'>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionDto | null>(null);
   const [ratingLevel, setRatingLevel] = useState<RatingLevel | ''>('');
@@ -208,6 +212,12 @@ export function ManageSubmissions() {
                 ))}
               </SelectContent>
             </Select>
+            {competitionFilter !== 'all' && (
+              <Button size="sm" variant="ghost" className="text-xs text-slate-500 h-8"
+                onClick={() => setCompetitionFilter('all')}>
+                Clear ×
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-2">
             <Label>Rating</Label>

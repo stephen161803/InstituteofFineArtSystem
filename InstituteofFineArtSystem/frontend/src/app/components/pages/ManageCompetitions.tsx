@@ -44,7 +44,7 @@ export function ManageCompetitions() {
   const [allAwards, setAllAwards] = useState<AwardDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'Ongoing' | 'Upcoming' | 'Completed'>('Ongoing');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Ongoing' | 'Upcoming' | 'Completed'>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<CompetitionDto | null>(null);
   const [formData, setFormData] = useState<FormData>(defaultForm);
@@ -79,7 +79,7 @@ export function ManageCompetitions() {
 
   const filteredCompetitions = competitions.filter(
     (c) =>
-      c.status === statusFilter &&
+      (statusFilter === 'all' || c.status === statusFilter) &&
       (c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.description ?? '').toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -393,11 +393,13 @@ export function ManageCompetitions() {
           <CardTitle>All Competitions</CardTitle>
           <CardDescription>Create and manage art competitions</CardDescription>
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            {(['Ongoing', 'Upcoming', 'Completed'] as const).map((s) => (
+            {(['all', 'Ongoing', 'Upcoming', 'Completed'] as const).map((s) => (
               <Button key={s} size="sm" variant={statusFilter === s ? 'default' : 'outline'}
                 onClick={() => setStatusFilter(s)} className={statusFilter === s ? '' : 'text-slate-600'}>
-                {s}
-                <span className="ml-1.5 text-xs opacity-70">({competitions.filter(c => c.status === s).length})</span>
+                {s === 'all' ? 'All' : s}
+                <span className="ml-1.5 text-xs opacity-70">
+                  ({s === 'all' ? competitions.length : competitions.filter(c => c.status === s).length})
+                </span>
               </Button>
             ))}
           </div>

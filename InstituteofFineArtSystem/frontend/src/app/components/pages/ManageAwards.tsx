@@ -9,6 +9,7 @@ import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Trophy, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 const AWARD_ICON: Record<string, string> = {
@@ -20,6 +21,7 @@ type SortKey = 'totalScore' | string;
 type PendingMap = Record<number, Set<number>>;
 
 export function ManageAwards() {
+  const navigate = useNavigate();
   const [studentAwards, setStudentAwards] = useState<StudentAwardDto[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
@@ -53,6 +55,13 @@ export function ManageAwards() {
   const comp = competitions.find(c => c.id === Number(selectedCompetitionId));
   const awards: CompetitionAwardDto[] = comp?.awards ?? [];
   const criteria: CompetitionCriteriaDto[] = comp?.criteria ?? [];
+
+  const unreviewedCount = useMemo(() => {
+    if (!selectedCompetitionId) return 0;
+    return submissions.filter(s =>
+      s.competitionId === Number(selectedCompetitionId) && !s.review
+    ).length;
+  }, [submissions, selectedCompetitionId]);
 
   const rows = useMemo(() => {
     if (!selectedCompetitionId) return [];
@@ -190,6 +199,16 @@ export function ManageAwards() {
         </SelectContent>
       </Select>
 
+      {unreviewedCount > 0 && (
+        <div className="flex items-center gap-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <span>⚠️ {unreviewedCount} submission{unreviewedCount > 1 ? 's' : ''} not reviewed yet. Awards cannot be granted until all are reviewed.</span>
+          <Button size="sm" variant="outline" className="shrink-0 text-amber-700 border-amber-300 hover:bg-amber-100"
+            onClick={() => navigate(`/dashboard/submissions?competitionId=${selectedCompetitionId}`)}>
+            Go to Review
+          </Button>
+        </div>
+      )}
+
       {!selectedCompetitionId && (
         <Card><CardContent className="p-12 text-center">
           <Trophy className="size-10 mx-auto mb-3 text-slate-300" />
@@ -206,7 +225,7 @@ export function ManageAwards() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base">{comp?.title} — {sorted.length} submissions</CardTitle>
-              <Button disabled={pendingCount === 0 || saving} onClick={handleGrantAll} className="gap-2">
+              <Button disabled={pendingCount === 0 || saving || unreviewedCount > 0} onClick={handleGrantAll} className="gap-2">
                 {saving ? <Loader2 className="size-4 animate-spin" /> : <Trophy className="size-4" />}
                 Grant Selected ({pendingCount})
               </Button>
