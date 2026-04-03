@@ -11,8 +11,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
-import { Edit, Trash2, Upload as UploadIcon, Image as ImageIcon, X, Download, Trophy, Star, Eye, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';import { Edit, Trash2, Upload as UploadIcon, Image as ImageIcon, X, Download, Trophy, Star, Eye, Loader2 } from 'lucide-react';
 import { api } from '../../api/client';
 import { toast } from 'sonner';
 
@@ -48,6 +47,7 @@ export function StudentSubmissions() {
   const [editingSubmission, setEditingSubmission] = useState<SubmissionDto | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [detailSubmission, setDetailSubmission] = useState<SubmissionDto | null>(null);
+  const [selectedAward, setSelectedAward] = useState<StudentAwardDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -434,7 +434,8 @@ export function StudentSubmissions() {
                         {compAwards.map((award) => {
                           const sub = mySubmissions.find((s) => s.id === award.submissionId);
                           return (
-                            <div key={award.id} className="flex items-center gap-3 p-3 border rounded-lg bg-yellow-50">
+                            <div key={award.id} onClick={() => setSelectedAward(award)}
+                              className="flex items-center gap-3 p-3 border rounded-lg bg-yellow-50 cursor-pointer hover:shadow-md transition-shadow">
                               <span className="text-3xl shrink-0">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>
                               <div className="flex-1">
                                 <p className="font-semibold text-sm">{award.awardName}</p>
@@ -453,6 +454,37 @@ export function StudentSubmissions() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Award Detail Dialog */}
+      <Dialog open={!!selectedAward} onOpenChange={open => { if (!open) setSelectedAward(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">{AWARD_ICON[selectedAward?.awardName ?? ''] ?? '🏆'}</span>
+              {selectedAward?.awardName}
+            </DialogTitle>
+            <DialogDescription>{selectedAward?.competitionTitle}</DialogDescription>
+          </DialogHeader>
+          {selectedAward && (() => {
+            const sub = mySubmissions.find(s => s.id === selectedAward.submissionId);
+            return (
+              <div className="space-y-4">
+                {sub?.workUrl && (
+                  <img src={sub.workUrl} alt={sub.title ?? ''} className="w-full h-52 object-cover rounded-lg" />
+                )}
+                <div className="space-y-1.5 text-sm">
+                  <p><span className="font-medium text-slate-600">Artwork:</span> {selectedAward.submissionTitle ?? '—'}</p>
+                  <p><span className="font-medium text-slate-600">Competition:</span> {selectedAward.competitionTitle ?? '—'}</p>
+                  <p><span className="font-medium text-slate-600">Award:</span> {selectedAward.awardName}</p>
+                  {selectedAward.awardDescription && <p><span className="font-medium text-slate-600">Description:</span> {selectedAward.awardDescription}</p>}
+                  <p><span className="font-medium text-slate-600">Date:</span> {new Date(selectedAward.awardedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  {sub?.description && <p className="text-slate-500 italic text-xs mt-2">{sub.description}</p>}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

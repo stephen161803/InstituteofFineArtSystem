@@ -98,6 +98,8 @@ public class UsersController(AppDbContext db) : ControllerBase
 
         var staff = await db.Staffs.FindAsync(userId);
         if (staff is not null) db.Staffs.Remove(staff);
+        // Remove refresh tokens first
+        await db.RefreshTokens.Where(r => r.UserId == userId).ExecuteDeleteAsync();
         db.Users.Remove(user);
         await db.SaveChangesAsync();
         return Ok(new { message = "Staff deleted successfully." });
@@ -197,6 +199,8 @@ public class UsersController(AppDbContext db) : ControllerBase
 
         var student = await db.Students.FindAsync(userId);
         if (student is not null) db.Students.Remove(student);
+        // Remove refresh tokens first
+        await db.RefreshTokens.Where(r => r.UserId == userId).ExecuteDeleteAsync();
         db.Users.Remove(user);
         await db.SaveChangesAsync();
         return Ok(new { message = "Student deleted successfully." });
@@ -250,6 +254,8 @@ public class UsersController(AppDbContext db) : ControllerBase
             return BadRequest(new { message = "Cannot delete: this customer has purchase records." });
 
         db.Customers.Remove(customer);
+        // Remove refresh tokens first
+        await db.RefreshTokens.Where(r => r.UserId == customer.UserId).ExecuteDeleteAsync();
         db.Users.Remove(customer.User);
         await db.SaveChangesAsync();
         return Ok(new { message = "Customer deleted successfully." });
@@ -319,6 +325,8 @@ public class UsersController(AppDbContext db) : ControllerBase
         if (hasCompetitions)
             return BadRequest(new { message = "Cannot delete: this user has created competitions." });
 
+        // Remove refresh tokens first
+        await db.RefreshTokens.Where(r => r.UserId == userId).ExecuteDeleteAsync();
         db.Users.Remove(user);
         await db.SaveChangesAsync();
         return Ok(new { message = "User deleted successfully." });

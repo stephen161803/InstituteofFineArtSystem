@@ -62,6 +62,7 @@ public class AwardsController(AppDbContext db) : ControllerBase
         var list = await q.ToListAsync();
         return Ok(list.Select(sa => new StudentAwardDto(
             sa.Id, sa.SubmissionId, sa.CompetitionAwardId, sa.CompetitionAward.Award.AwardName,
+            sa.CompetitionAward.Award.Description,
             sa.AwardedBy, sa.AwardedDate.ToString("yyyy-MM-dd"),
             sa.Submission.Student.FullName,
             sa.Submission.Competition.Title,

@@ -10,6 +10,7 @@ public record StudentAwardDto(
     int SubmissionId,
     int CompetitionAwardId,
     string? AwardName,
+    string? AwardDescription,
     int AwardedBy,
     string AwardedDate,
     string? StudentName,

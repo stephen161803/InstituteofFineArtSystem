@@ -33,7 +33,9 @@ import { ManageAdminUsers } from './components/pages/ManageAdminUsers';
 import { ArtworkDetail } from './components/pages/ArtworkDetail';
 import { EditProfilePage } from './components/pages/EditProfilePage';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './components/ui/dialog';
 import { awardsApi, StudentAwardDto } from './api/awards';
+import { submissionsApi, SubmissionDto } from './api/submissions';
 
 // Simple protected route wrapper
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
@@ -234,13 +236,19 @@ function StudentAwardsView() {
   const storedUser = localStorage.getItem('currentUser');
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const [myAwards, setMyAwards] = useState<StudentAwardDto[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<SubmissionDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAward, setSelectedAward] = useState<StudentAwardDto | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
-    awardsApi.getStudentAwards({ studentId: currentUser.id })
-      .then(setMyAwards)
-      .catch(() => toast.error('Failed to load awards'))
+    Promise.all([
+      awardsApi.getStudentAwards({ studentId: currentUser.id }),
+      submissionsApi.getAll(),
+    ]).then(([awards, subs]) => {
+      setMyAwards(awards);
+      setMySubmissions(subs.filter(s => s.studentId === currentUser.id));
+    }).catch(() => toast.error('Failed to load awards'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -310,13 +318,15 @@ function StudentAwardsView() {
                 {myAwards.map((award) => (
                   <div
                     key={award.id}
-                    className={`border-l-4 pl-4 py-3 rounded-r-lg ${awardColors[award.awardName ?? ''] ?? 'border-slate-300 bg-slate-50'}`}
+                    onClick={() => setSelectedAward(award)}
+                    className={`border-l-4 pl-4 py-3 rounded-r-lg cursor-pointer hover:shadow-md transition-shadow ${awardColors[award.awardName ?? ''] ?? 'border-slate-300 bg-slate-50'}`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-2xl">{awardIcons[award.awardName ?? ''] ?? '🏆'}</span>
                       <h4 className="font-semibold">{award.awardName}</h4>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{award.competitionTitle}</p>
+                    <p className="text-xs text-slate-500 mb-1 italic">{award.submissionTitle}</p>
                     {award.awardedDate && (
                       <p className="text-xs text-slate-500">
                         Awarded: {new Date(award.awardedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -329,6 +339,37 @@ function StudentAwardsView() {
           </Card>
         </>
       )}
+
+      {/* Award Detail Dialog */}
+      <Dialog open={!!selectedAward} onOpenChange={open => { if (!open) setSelectedAward(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">{awardIcons[selectedAward?.awardName ?? ''] ?? '🏆'}</span>
+              {selectedAward?.awardName}
+            </DialogTitle>
+            <DialogDescription>{selectedAward?.competitionTitle}</DialogDescription>
+          </DialogHeader>
+          {selectedAward && (() => {
+            const sub = mySubmissions.find(s => s.id === selectedAward.submissionId);
+            return (
+              <div className="space-y-4">
+                {sub?.workUrl && (
+                  <img src={sub.workUrl} alt={sub.title ?? ''} className="w-full h-52 object-cover rounded-lg" />
+                )}
+                <div className="space-y-1.5 text-sm">
+                  <p><span className="font-medium text-slate-600">Artwork:</span> {selectedAward.submissionTitle ?? '—'}</p>
+                  <p><span className="font-medium text-slate-600">Competition:</span> {selectedAward.competitionTitle ?? '—'}</p>
+                  <p><span className="font-medium text-slate-600">Award:</span> {selectedAward.awardName}</p>
+                  {selectedAward.awardDescription && <p><span className="font-medium text-slate-600">Description:</span> {selectedAward.awardDescription}</p>}
+                  <p><span className="font-medium text-slate-600">Date:</span> {new Date(selectedAward.awardedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  {sub?.description && <p className="text-slate-500 italic text-xs mt-2">{sub.description}</p>}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -19,6 +19,7 @@ export interface StudentAwardDto {
   submissionId: number;
   competitionAwardId: number;
   awardName?: string;
+  awardDescription?: string;
   awardedBy: number;
   awardedDate: string;
   studentName?: string;

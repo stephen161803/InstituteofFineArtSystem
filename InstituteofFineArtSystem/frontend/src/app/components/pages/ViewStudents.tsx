@@ -20,6 +20,7 @@ export function ViewStudents() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<StudentDto | null>(null);
+  const [selectedAward, setSelectedAward] = useState<StudentAwardDto | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -224,22 +225,32 @@ export function ViewStudents() {
                   const awards = studentAwards.filter((a) => studentSubs.some((s) => s.id === a.submissionId));
                   return awards.length > 0 ? (
                     <div className="space-y-3">
-                      {awards.map((award) => (
-                        <Card key={award.id}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-4">
-                              <div className="bg-yellow-100 p-3 rounded-full shrink-0">
-                                <Trophy className="size-6 text-yellow-600" />
+                      {awards.map((award) => {
+                        const sub = submissions.find(s => s.id === award.submissionId);
+                        return (
+                          <Card key={award.id} className="cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => setSelectedAward(award)}>
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-4">
+                                {sub?.workUrl && (
+                                  <img src={sub.workUrl} alt={sub.title ?? ''} className="size-16 object-cover rounded-lg shrink-0" />
+                                )}
+                                {!sub?.workUrl && (
+                                  <div className="bg-yellow-100 p-3 rounded-full shrink-0">
+                                    <Trophy className="size-6 text-yellow-600" />
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-lg mb-1">{award.awardName}</h4>
+                                  <p className="text-sm text-slate-600 mb-1">Competition: {award.competitionTitle}</p>
+                                  {award.submissionTitle && <p className="text-xs text-slate-500 mb-1">Artwork: {award.submissionTitle}</p>}
+                                  <p className="text-xs text-slate-500">Awarded on {new Date(award.awardedDate).toLocaleDateString()}</p>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-lg mb-1">{award.awardName}</h4>
-                                <p className="text-sm text-slate-600 mb-2">Competition: {award.competitionTitle}</p>
-                                <p className="text-xs text-slate-500">Awarded on {new Date(award.awardedDate).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   ) : (
                     <Card>
@@ -254,6 +265,37 @@ export function ViewStudents() {
               </TabsContent>
             </Tabs>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Award Detail Dialog */}
+      <Dialog open={!!selectedAward} onOpenChange={open => { if (!open) setSelectedAward(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="size-5 text-yellow-600" />
+              {selectedAward?.awardName}
+            </DialogTitle>
+            <DialogDescription>{selectedAward?.competitionTitle}</DialogDescription>
+          </DialogHeader>
+          {selectedAward && (() => {
+            const sub = submissions.find(s => s.id === selectedAward.submissionId);
+            return (
+              <div className="space-y-4">
+                {sub?.workUrl && (
+                  <img src={sub.workUrl} alt={sub.title ?? ''} className="w-full h-52 object-cover rounded-lg" />
+                )}
+                <div className="space-y-1.5 text-sm">
+                  <p><span className="font-medium text-slate-600">Artwork:</span> {selectedAward.submissionTitle ?? '—'}</p>
+                  <p><span className="font-medium text-slate-600">Competition:</span> {selectedAward.competitionTitle ?? '—'}</p>
+                  <p><span className="font-medium text-slate-600">Award:</span> {selectedAward.awardName}</p>
+                  {selectedAward.awardDescription && <p><span className="font-medium text-slate-600">Description:</span> {selectedAward.awardDescription}</p>}
+                  <p><span className="font-medium text-slate-600">Date:</span> {new Date(selectedAward.awardedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  {sub?.description && <p className="text-slate-500 italic text-xs mt-2">{sub.description}</p>}
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

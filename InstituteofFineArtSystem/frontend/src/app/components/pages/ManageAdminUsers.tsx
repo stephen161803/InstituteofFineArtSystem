@@ -11,7 +11,7 @@ import { Plus, Trash2, ShieldCheck, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 
-const defaultForm = { username: '', password: '', fullName: '', email: '', phone: '', role: 'Manager' };
+const defaultForm = { username: '', password: '', confirmPassword: '', fullName: '', email: '', phone: '', role: 'Manager' };
 
 export function ManageAdminUsers() {
   const { currentUser } = useAuth();
@@ -44,6 +44,8 @@ export function ManageAdminUsers() {
     if (!formData.username.trim()) { toast.error('Username is required'); return; }
     if (!formData.password.trim()) { toast.error('Password is required'); return; }
     if (formData.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (formData.password !== formData.confirmPassword) { toast.error('Passwords do not match'); return; }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) { toast.error('Invalid email address'); return; }
     setSaving(true);
     try {
       await usersApi.createAdminUser(formData);
@@ -159,7 +161,11 @@ export function ManageAdminUsers() {
             </div>
             <div className="space-y-2">
               <Label>Password *</Label>
-              <Input required type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+              <Input required type="password" autoComplete="new-password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Confirm Password *</Label>
+              <Input required type="password" autoComplete="new-password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
