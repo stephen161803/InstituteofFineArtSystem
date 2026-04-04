@@ -448,8 +448,8 @@ export function ManageAwards() {
                                   className="ml-0.5 text-purple-400 hover:text-red-500 transition-colors">×</button>
                               </span>
                             ))}
-                            <Select value="" onValueChange={v => togglePending(row.s.id, Number(v))}>
-                              <SelectTrigger className="h-6 w-28 text-xs border-dashed border-slate-300 text-slate-400 hover:border-purple-400 hover:text-purple-600 transition-colors">
+                            <Select value="" onValueChange={v => togglePending(row.s.id, Number(v))} disabled={unreviewedCount > 0}>
+                              <SelectTrigger className={`h-6 w-28 text-xs border-dashed transition-colors ${unreviewedCount > 0 ? 'opacity-40 cursor-not-allowed' : 'border-slate-300 text-slate-400 hover:border-purple-400 hover:text-purple-600'}`}>
                                 <SelectValue placeholder="+ Award" />
                               </SelectTrigger>
                               <SelectContent>

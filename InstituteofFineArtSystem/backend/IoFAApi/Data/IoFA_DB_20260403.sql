@@ -545,7 +545,7 @@ INSERT [dbo].[Competitions] ([Id], [Title], [Description], [StartDate], [EndDate
 INSERT [dbo].[Competitions] ([Id], [Title], [Description], [StartDate], [EndDate], [CreatedBy], [Status], [IsDeleted]) VALUES (18, N'Architectural Visions', N'Draw and paint buildings and architectural wonders', CAST(N'2026-03-01T00:00:00.000' AS DateTime), CAST(N'2026-04-10T00:00:00.000' AS DateTime), 21, N'Ongoing', 0)
 INSERT [dbo].[Competitions] ([Id], [Title], [Description], [StartDate], [EndDate], [CreatedBy], [Status], [IsDeleted]) VALUES (19, N'Fantasy Art Realm', N'Bring fantasy worlds and creatures to life', CAST(N'2026-07-01T00:00:00.000' AS DateTime), CAST(N'2026-08-15T00:00:00.000' AS DateTime), 17, N'Upcoming', 1)
 INSERT [dbo].[Competitions] ([Id], [Title], [Description], [StartDate], [EndDate], [CreatedBy], [Status], [IsDeleted]) VALUES (20, N'Black and White Excellence', N'Master the art of monochrome artwork', CAST(N'2025-11-01T00:00:00.000' AS DateTime), CAST(N'2025-12-20T00:00:00.000' AS DateTime), 22, N'Completed', 0)
-INSERT [dbo].[Competitions] ([Id], [Title], [Description], [StartDate], [EndDate], [CreatedBy], [Status], [IsDeleted]) VALUES (21, N'Abstract Expression Contest', N'', CAST(N'2026-04-01T00:00:00.000' AS DateTime), CAST(N'2026-04-30T00:00:00.000' AS DateTime), 3, N'Ongoing', 0)
+INSERT [dbo].[Competitions] ([Id], [Title], [Description], [StartDate], [EndDate], [CreatedBy], [Status], [IsDeleted]) VALUES (21, N'Abstract Expression Contest 2026', N'', CAST(N'2026-04-01T00:00:00.000' AS DateTime), CAST(N'2026-04-30T00:00:00.000' AS DateTime), 3, N'Ongoing', 0)
 SET IDENTITY_INSERT [dbo].[Competitions] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Criteria] ON 
@@ -679,6 +679,16 @@ INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES 
 INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (90, 1, 2, CAST(100.00 AS Decimal(5, 2)))
 INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (91, 1, 3, CAST(100.00 AS Decimal(5, 2)))
 INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (92, 1, 4, CAST(100.00 AS Decimal(5, 2)))
+-- Review 24: Sub 10 (Butterfly Garden), Comp 5 - Good rating
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (93, 24, 1, CAST(76.00 AS Decimal(5, 2)))
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (94, 24, 2, CAST(74.00 AS Decimal(5, 2)))
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (95, 24, 3, CAST(78.00 AS Decimal(5, 2)))
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (96, 24, 4, CAST(72.00 AS Decimal(5, 2)))
+-- Review 25: Sub 11 (Rain and Renewal), Comp 5 - Best rating
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (97, 25, 1, CAST(94.00 AS Decimal(5, 2)))
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (98, 25, 2, CAST(92.00 AS Decimal(5, 2)))
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (99, 25, 3, CAST(96.00 AS Decimal(5, 2)))
+INSERT [dbo].[GradeDetails] ([Id], [ReviewId], [CriteriaId], [RawScore]) VALUES (100, 25, 4, CAST(93.00 AS Decimal(5, 2)))
 SET IDENTITY_INSERT [dbo].[GradeDetails] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Notifications] ON 
