@@ -146,7 +146,7 @@ export function StaffDashboard() {
                         <p className="text-xs text-slate-500 truncate">{comp?.title}</p>
                         <p className="text-xs text-slate-400">{new Date(item.submittedAt).toLocaleDateString()}</p>
                       </div>
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs whitespace-nowrap" onClick={() => navigate('/dashboard/submissions')}>
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs whitespace-nowrap" onClick={() => navigate(`/dashboard/submissions?competitionId=${item.competitionId}`)}>
                         Grade Now <ChevronRight className="size-3 ml-1" />
                       </Button>
                     </div>
