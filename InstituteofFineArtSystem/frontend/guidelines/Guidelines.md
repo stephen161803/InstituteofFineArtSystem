@@ -1,61 +1,40 @@
-**Add your own guidelines here**
-<!--
+# Development Guidelines
 
-System Guidelines
+## General
 
-Use this file to provide the AI with rules and guidelines you want it to follow.
-This template outlines a few examples of things you can add. You can add your own sections and format it to suit your needs
+- Use TypeScript strictly — avoid `any` where possible
+- Keep components small and focused on a single responsibility
+- Use `useMemo` and `useCallback` for expensive computations
+- Always handle loading and error states
 
-TIP: More context isn't always better. It can confuse the LLM. Try and add the most important rules you need
+## Layout & Styling
 
-# General guidelines
+- Use Flexbox and CSS Grid by default; avoid absolute positioning unless necessary
+- Follow mobile-first responsive design using Tailwind breakpoints (`sm`, `md`, `lg`)
+- Use shadcn/ui components before building custom ones
+- Keep consistent spacing using Tailwind's spacing scale
 
-Any general rules you want the AI to follow.
-For example:
+## Forms & Validation
 
-* Only use absolute positioning when necessary. Opt for responsive and well structured layouts that use flexbox and grid by default
-* Refactor code as you go to keep code clean
-* Keep file sizes small and put helper functions and components in their own files.
+- Validate required fields before API calls
+- Show inline error messages near the relevant field
+- Disable submit buttons while saving (`disabled={saving}`)
+- Show a `Loader2` spinner inside buttons during async operations
 
---------------
+## API & Data
 
-# Design system guidelines
-Rules for how the AI should make generations look like your company's design system
+- All API calls go through `src/app/api/` — never call `fetch` directly in components
+- Handle errors with `toast.error()` from Sonner
+- Refresh data after mutations by re-fetching from the API
 
-Additionally, if you select a design system to use in the prompt box, you can reference
-your design system's components, tokens, variables and components.
-For example:
+## Dialogs & Modals
 
-* Use a base font-size of 14px
-* Date formats should always be in the format “Jun 10”
-* The bottom toolbar should only ever have a maximum of 4 items
-* Never use the floating action button with the bottom toolbar
-* Chips should always come in sets of 3 or more
-* Don't use a dropdown if there are 2 or fewer options
+- Use shadcn `Dialog` for confirmations and forms
+- Always include a Cancel button alongside the primary action
+- Destructive actions (delete) use `variant="destructive"` button
 
-You can also create sub sections and add more specific details
-For example:
+## Role-Based Access
 
-
-## Button
-The Button component is a fundamental interactive element in our design system, designed to trigger actions or navigate
-users through the application. It provides visual feedback and clear affordances to enhance user experience.
-
-### Usage
-Buttons should be used for important actions that users need to take, such as form submissions, confirming choices,
-or initiating processes. They communicate interactivity and should have clear, action-oriented labels.
-
-### Variants
-* Primary Button
-  * Purpose : Used for the main action in a section or page
-  * Visual Style : Bold, filled with the primary brand color
-  * Usage : One primary button per section to guide users toward the most important action
-* Secondary Button
-  * Purpose : Used for alternative or supporting actions
-  * Visual Style : Outlined with the primary color, transparent background
-  * Usage : Can appear alongside a primary button for less important actions
-* Tertiary Button
-  * Purpose : Used for the least important actions
-  * Visual Style : Text-only with no border, using primary color
-  * Usage : For actions that should be available but not emphasized
--->
+- Check `currentUser?.role` from `useAuth()` to conditionally render UI
+- Never rely solely on frontend checks — backend enforces authorization too
+- Roles: `admin`, `manager`, `staff`, `student`, `customer`

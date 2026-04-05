@@ -1,38 +1,38 @@
-# Institute of Fine Art System (IoFA)
+# Institute of Fine Arts System (IoFA)
 
-Hệ thống quản lý cuộc thi, triển lãm và bán tác phẩm nghệ thuật.
+A full-stack web application for managing art competitions, student submissions, evaluations, awards, and exhibitions.
 
-## Yêu cầu cài đặt
+## Requirements
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js v18+](https://nodejs.org)
-- [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (LocalDB, Express hoặc Developer)
-- [SQL Server Management Studio - SSMS](https://aka.ms/ssmsfullsetup) _(tùy chọn, để chạy script)_
+- [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (LocalDB, Express, or Developer edition)
+- [SQL Server Management Studio (SSMS)](https://aka.ms/ssmsfullsetup) *(optional, for running the SQL script)*
 
 ---
 
-## Cài đặt và chạy (Development)
+## Setup & Run (Development)
 
-### 1. Clone repo
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/stephen161803/InstituteofFineArtSystem.git
 cd InstituteofFineArtSystem
 ```
 
-### 2. Tạo Database
+### 2. Create the Database
 
-Mở SSMS, kết nối vào SQL Server, sau đó mở và chạy file:
+Open SSMS, connect to your SQL Server instance, then open and execute:
 
 ```
-InstituteofFineArtSystem/backend/IoFAApi/Data/scriptDB_IoFA-23032026.sql
+InstituteofFineArtSystem/backend/IoFAApi/Data/IoFA_DB_20260403.sql
 ```
 
-Script sẽ tự động tạo database `FineArtsInstitute_Final`, toàn bộ bảng, view, trigger và dữ liệu mẫu.
+This script will automatically create the `FineArtsInstitute_Final` database, all tables, views, triggers, and seed data.
 
-### 3. Cấu hình Backend
+### 3. Configure the Backend
 
-Mở `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json`, kiểm tra connection string:
+Open `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json` and verify the connection string:
 
 ```json
 "ConnectionStrings": {
@@ -40,15 +40,15 @@ Mở `InstituteofFineArtSystem/backend/IoFAApi/appsettings.json`, kiểm tra con
 }
 ```
 
-> Nếu SQL Server dùng instance name khác (ví dụ `localhost\SQLEXPRESS`), sửa lại `Server=` cho phù hợp.
+> If your SQL Server uses a named instance (e.g. `localhost\SQLEXPRESS`), update the `Server=` value accordingly.
 
-### 4. Chạy nhanh (Windows)
+### 4. Quick Start (Windows)
 
-Double-click `start-dev.bat` ở thư mục gốc — script tự mở 2 terminal riêng cho backend và frontend.
+Double-click `start-dev.bat` in the root directory — it will open two separate terminals for the backend and frontend.
 
-> Cần chạy `npm install` trong thư mục `frontend` ít nhất một lần trước.
+> Make sure to run `npm install` inside the `frontend` folder at least once beforehand.
 
-### 4. Chạy thủ công
+### 4. Manual Start
 
 **Backend:**
 ```bash
@@ -64,41 +64,41 @@ npm install
 npm run dev
 ```
 
-Frontend mặc định tại `http://localhost:5173`. Backend tự chọn port khi khởi động (xem terminal).
+Frontend runs at `http://localhost:5173` by default. The backend port is shown in the terminal on startup.
 
 ---
 
 ## Deploy (Production)
 
-### Build và publish
+### Build and publish
 
-Chạy `publish.bat` ở thư mục gốc:
+Run `publish.bat` from the root directory:
 
 ```bash
 publish.bat
 ```
 
-Script sẽ:
-1. Build frontend (`npm run build`)
-2. Copy `dist/` vào `backend/wwwroot/`
-3. Publish backend ra `D:\Publish_Web`
+This script will:
+1. Build the frontend (`npm run build`)
+2. Copy `dist/` into `backend/wwwroot/`
+3. Publish the backend to `D:\Publish_Web`
 
-> Nếu app đang chạy từ `D:\Publish_Web`, cần dừng process trước khi publish lại.
+> If the app is already running from `D:\Publish_Web`, stop the process before publishing again.
 
-### Chạy sau khi publish
+### Run after publishing
 
 ```bash
 cd D:\Publish_Web
 dotnet IoFAApi.dll
 ```
 
-Truy cập tại địa chỉ hiển thị trong terminal (ví dụ `http://localhost:5000`).
+Access the app at the address shown in the terminal (e.g. `http://localhost:5000`).
 
-### Lưu ý về file ảnh (uploads)
+### Note on uploaded files
 
-Ảnh upload (artwork, avatar) được lưu tại `D:\Publish_Web\uploads\`.
+Uploaded images (artworks, avatars) are stored in `D:\Publish_Web\uploads\`.
 
-Khi publish lại, folder `D:\Publish_Web` bị xóa và tạo mới — **ảnh sẽ bị mất**. Để tránh mất ảnh, đổi đường dẫn lưu sang thư mục cố định trong `appsettings.json`:
+When publishing again, the `D:\Publish_Web` folder is deleted and recreated — **uploaded files will be lost**. To avoid this, change the storage path to a fixed directory in `appsettings.json`:
 
 ```json
 "Upload": {
@@ -108,15 +108,15 @@ Khi publish lại, folder `D:\Publish_Web` bị xóa và tạo mới — **ảnh
 
 ---
 
-## Tài khoản mặc định
+## Default Accounts
 
-Mật khẩu tất cả tài khoản: `password123`
+All accounts use the password: `password123`
 
 | Username  | Role     |
 |-----------|----------|
 | admin     | Admin    |
-| manager   | Manager  |
-| staff     | Staff    |
+| manager1  | Manager  |
+| staff1    | Staff    |
 | alice     | Student  |
 | bob       | Student  |
 | carol     | Student  |
@@ -125,18 +125,46 @@ Mật khẩu tất cả tài khoản: `password123`
 
 ---
 
-## Cấu trúc dự án
+## User Roles
+
+| Role | Permissions |
+|---|---|
+| **Admin** | Manage Staff, Students, Customers, Admin/Manager accounts |
+| **Manager** | View-only: Competitions, Submissions, Awards, Exhibitions, Statistics |
+| **Staff** | Manage Competitions, review Submissions, grant Awards, manage Exhibitions |
+| **Student** | View Competitions, submit artworks, view own reviews and awards |
+| **Customer** | Browse exhibitions, purchase available artworks |
+
+---
+
+## Project Structure
 
 ```
 InstituteofFineArtSystem/
 ├── backend/
-│   └── IoFAApi/              # ASP.NET Core 10 Web API
-│       ├── Controllers/
-│       ├── Models/
-│       ├── DTOs/
+│   └── IoFAApi/                  # ASP.NET Core 10 Web API
+│       ├── Controllers/          # API endpoints
+│       ├── Models/               # Entity models
+│       ├── DTOs/                 # Data transfer objects
 │       ├── Data/
-│       │   └── scriptDB_IoFA-23032026.sql  # Script tạo DB + data
+│       │   └── IoFA_DB_20260403.sql  # Database schema + seed data
 │       └── appsettings.json
-└── frontend/                 # React + Vite + TailwindCSS
+└── frontend/                     # React + Vite + Tailwind CSS
     └── src/
+        └── app/
+            ├── api/              # API client functions
+            ├── components/       # UI components, pages, dashboards
+            ├── context/          # Auth context
+            └── routes.tsx        # Route definitions
 ```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Tailwind CSS v4, shadcn/ui |
+| Backend | ASP.NET Core 10, Entity Framework Core |
+| Database | SQL Server |
+| Auth | JWT + BCrypt |
