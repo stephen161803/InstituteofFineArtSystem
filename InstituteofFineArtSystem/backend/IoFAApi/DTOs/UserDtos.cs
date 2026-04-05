@@ -40,7 +40,8 @@ public record StudentDto(
     string AdmissionNumber,
     string? AdmissionDate,
     string? DateOfBirth,
-    string? Address
+    string? Address,
+    string? AvatarUrl
 );
 
 public record CreateStaffRequest(

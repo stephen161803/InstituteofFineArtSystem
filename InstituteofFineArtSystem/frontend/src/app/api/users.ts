@@ -19,6 +19,7 @@ export interface StudentDto {
   admissionDate?: string;
   dateOfBirth?: string;
   address?: string;
+  avatarUrl?: string;
 }
 
 export interface CustomerDto {

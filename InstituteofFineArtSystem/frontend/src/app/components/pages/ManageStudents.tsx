@@ -231,7 +231,10 @@ export function ManageStudents() {
                   <TableRow key={student.userId}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">{student.fullName?.charAt(0) ?? '?'}</div>
+                        {student.avatarUrl
+                          ? <img src={student.avatarUrl} alt={student.fullName} className="size-10 rounded-full object-cover" />
+                          : <div className="size-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">{student.fullName?.charAt(0) ?? '?'}</div>
+                        }
                         <div><p className="font-medium">{student.fullName}</p><p className="text-xs text-slate-500">{student.admissionNumber}</p></div>
                       </div>
                     </TableCell>
@@ -373,7 +376,10 @@ export function ManageStudents() {
           {selectedStudent && (
             <div className="space-y-6 py-4">
               <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="size-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">{selectedStudent.fullName?.charAt(0) ?? '?'}</div>
+                {selectedStudent.avatarUrl
+                  ? <img src={selectedStudent.avatarUrl} alt={selectedStudent.fullName} className="size-16 rounded-full object-cover" />
+                  : <div className="size-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">{selectedStudent.fullName?.charAt(0) ?? '?'}</div>
+                }
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">{selectedStudent.fullName}</h3>
                   <p className="text-sm text-slate-600">{selectedStudent.admissionNumber}</p>

@@ -118,7 +118,8 @@ public class UsersController(AppDbContext db) : ControllerBase
                 s.AdmissionNumber,
                 s.AdmissionDate.HasValue ? s.AdmissionDate.Value.ToString("yyyy-MM-dd") : null,
                 s.DateOfBirth.HasValue ? s.DateOfBirth.Value.ToString("yyyy-MM-dd") : null,
-                s.Address))
+                s.Address,
+                s.User.AvatarUrl))
             .ToListAsync();
         return Ok(list);
     }
