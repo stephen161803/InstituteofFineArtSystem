@@ -3,6 +3,7 @@ import { awardsApi, type StudentAwardDto, type CompetitionAwardDto } from '../..
 import { submissionsApi, type SubmissionDto } from '../../api/submissions';
 import { competitionsApi, type CompetitionDto, type CompetitionCriteriaDto } from '../../api/competitions';
 import { usersApi, type StudentDto } from '../../api/users';
+import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -23,6 +24,8 @@ type PendingMap = Record<number, Set<number>>;
 
 export function ManageAwards() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const isManager = currentUser?.role === 'manager';
   const [studentAwards, setStudentAwards] = useState<StudentAwardDto[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
@@ -193,7 +196,7 @@ export function ManageAwards() {
     } catch (err: any) { toast.error(err.message ?? 'Failed'); }
   };
 
-  const [dialogSize, setDialogSize] = useState({ width: 900, height: 700 });
+  const [dialogSize, setDialogSize] = useState({ width: Math.min(window.innerWidth - 48, 1400), height: Math.min(window.innerHeight - 80, 800) });
   const isResizing = useRef(false);
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, dir: '' });
 
@@ -336,7 +339,7 @@ export function ManageAwards() {
 
       {/* Award dialog */}
       <Dialog open={!!selectedCompetitionId} onOpenChange={open => { if (!open) closeComp(); }}>
-        <DialogContent style={{ width: dialogSize.width, maxWidth: '95vw', height: dialogSize.height, maxHeight: '95vh' }} className="flex flex-col p-0 gap-0 overflow-visible [&>button:last-of-type]:hidden">
+        <DialogContent style={{ width: dialogSize.width, maxWidth: '98vw', height: dialogSize.height, maxHeight: '95vh' }} className="flex flex-col p-0 gap-0 overflow-visible [&>button:last-of-type]:hidden">
           {/* Resize handles */}
           <div onMouseDown={e => startResize(e, 'e')} className="absolute right-0 top-4 bottom-4 w-1.5 cursor-ew-resize hover:bg-purple-300/50 rounded-full z-50" />
           <div onMouseDown={e => startResize(e, 'w')} className="absolute left-0 top-4 bottom-4 w-1.5 cursor-ew-resize hover:bg-purple-300/50 rounded-full z-50" />
@@ -357,8 +360,8 @@ export function ManageAwards() {
                     {unreviewedCount} unreviewed — Go review
                   </Button>
                 )}
-                <Button disabled={pendingCount === 0 || saving || unreviewedCount > 0} onClick={handleGrantAll} size="sm"
-                  className={`gap-1.5 transition-colors ${pendingCount > 0 && unreviewedCount === 0 ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}>
+                <Button disabled={pendingCount === 0 || saving || unreviewedCount > 0 || isManager} onClick={handleGrantAll} size="sm"
+                  className={`gap-1.5 transition-colors ${pendingCount > 0 && unreviewedCount === 0 && !isManager ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}>
                   {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Trophy className="size-3.5" />}
                   Grant {pendingCount > 0 ? `(${pendingCount})` : 'Selected'}
                 </Button>
@@ -437,17 +440,18 @@ export function ManageAwards() {
                             {row.grantedAwards.map(g => (
                               <span key={g.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-200 whitespace-nowrap">
                                 {AWARD_ICON[g.awardName ?? ''] ?? '🏆'} {g.awardName}
-                                <button onClick={() => setRevokeDialog({ open: true, id: g.id, awardName: g.awardName ?? '' })}
-                                  className="ml-0.5 text-yellow-500 hover:text-red-500 transition-colors">×</button>
+                                {!isManager && <button onClick={() => setRevokeDialog({ open: true, id: g.id, awardName: g.awardName ?? '' })}
+                                  className="ml-0.5 text-yellow-500 hover:text-red-500 transition-colors">×</button>}
                               </span>
                             ))}
                             {pendingList.map(a => (
                               <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200 whitespace-nowrap">
                                 {AWARD_ICON[a.awardName] ?? '🏆'} {a.awardName}
-                                <button onClick={() => togglePending(row.s.id, a.id)}
-                                  className="ml-0.5 text-purple-400 hover:text-red-500 transition-colors">×</button>
+                                {!isManager && <button onClick={() => togglePending(row.s.id, a.id)}
+                                  className="ml-0.5 text-purple-400 hover:text-red-500 transition-colors">×</button>}
                               </span>
                             ))}
+                            {!isManager && (
                             <Select value="" onValueChange={v => togglePending(row.s.id, Number(v))} disabled={unreviewedCount > 0}>
                               <SelectTrigger className={`h-6 w-28 text-xs border-dashed transition-colors ${unreviewedCount > 0 ? 'opacity-40 cursor-not-allowed' : 'border-slate-300 text-slate-400 hover:border-purple-400 hover:text-purple-600'}`}>
                                 <SelectValue placeholder="+ Award" />
@@ -471,6 +475,7 @@ export function ManageAwards() {
                                   })}
                               </SelectContent>
                             </Select>
+                            )}
                           </div>
                         </td>
                       </tr>

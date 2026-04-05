@@ -7,9 +7,9 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { ArrowLeft, DollarSign, Calendar, MapPin, FileText, ShoppingCart, Loader2 } from 'lucide-react';
+import { ArrowLeft, DollarSign, Calendar, MapPin, FileText, ShoppingCart, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function ExhibitionDetail() {
@@ -19,6 +19,7 @@ export function ExhibitionDetail() {
   const [loading, setLoading] = useState(true);
   const [selectedArtwork, setSelectedArtwork] = useState<ExhibitionSubmissionDto | null>(null);
   const [isSaleDialogOpen, setIsSaleDialogOpen] = useState(false);
+  const [detailArtwork, setDetailArtwork] = useState<ExhibitionSubmissionDto | null>(null);
   const [saving, setSaving] = useState(false);
   const [saleForm, setSaleForm] = useState({ soldPrice: '', customerId: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -137,35 +138,87 @@ export function ExhibitionDetail() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {artworks.map((es) => (
-            <Card key={es.id} className="overflow-hidden group">
+            <Card key={es.id} className="overflow-hidden group cursor-pointer" onClick={() => setDetailArtwork(es)}>
               <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
                 {es.workUrl && <img src={es.workUrl} alt={es.submissionTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
                 <div className="absolute top-3 right-3">
                   {es.status === 'Sold' ? <Badge className="bg-green-600 text-white">SOLD</Badge> : es.status === 'Returned' ? <Badge variant="secondary">Returned</Badge> : <Badge variant="secondary">Available</Badge>}
                 </div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <Eye className="size-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                </div>
               </div>
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-4 space-y-2">
                 <div>
-                  <h3 className="font-semibold text-base sm:text-lg mb-1 line-clamp-1">{es.submissionTitle}</h3>
+                  <h3 className="font-semibold text-base mb-0.5 line-clamp-1">{es.submissionTitle}</h3>
                   <p className="text-sm text-slate-600">By {es.studentName}</p>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">Price:</span>
-                  <div className="flex items-center gap-1 font-semibold text-sm sm:text-base">
+                  <div className="flex items-center gap-1 font-semibold text-sm">
                     <DollarSign className="size-4" />${es.proposedPrice.toLocaleString('en-US')}
                   </div>
                 </div>
-                {es.status === 'Available' && (
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => openSaleDialog(es)}>
-                    <ShoppingCart className="size-4 mr-2" />Mark as Sold
-                  </Button>
-                )}
-                {es.status === 'Sold' && <Badge className="w-full justify-center bg-green-600 text-white">Sold Out</Badge>}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={!!detailArtwork} onOpenChange={open => { if (!open) setDetailArtwork(null); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          {detailArtwork && (
+            <>
+              {detailArtwork.workUrl && (
+                <div className="relative h-72 bg-slate-100">
+                  <img src={detailArtwork.workUrl} alt={detailArtwork.submissionTitle ?? ''} className="w-full h-full object-cover" />
+                  <div className="absolute top-3 right-3">
+                    {detailArtwork.status === 'Sold' ? <Badge className="bg-green-600 text-white">SOLD</Badge>
+                      : detailArtwork.status === 'Returned' ? <Badge variant="secondary">Returned</Badge>
+                      : <Badge variant="secondary">Available</Badge>}
+                  </div>
+                </div>
+              )}
+              <div className="p-5 space-y-4">
+                <DialogHeader>
+                  <DialogTitle>{detailArtwork.submissionTitle}</DialogTitle>
+                  <DialogDescription>By {detailArtwork.studentName}</DialogDescription>
+                </DialogHeader>
+                <div className="rounded-lg bg-slate-50 border p-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Proposed price</span>
+                    <span className="font-semibold">${detailArtwork.proposedPrice.toLocaleString('en-US')}</span>
+                  </div>
+                  {detailArtwork.sale && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Sold price</span>
+                        <span className="font-semibold text-green-700">${detailArtwork.sale.soldPrice.toLocaleString('en-US')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Customer</span>
+                        <span className="font-medium">{detailArtwork.sale.customerName ?? '—'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Sale date</span>
+                        <span>{new Date(detailArtwork.sale.soldDate).toLocaleDateString()}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setDetailArtwork(null)}>Close</Button>
+                  {detailArtwork.status === 'Available' && (
+                    <Button onClick={() => { setDetailArtwork(null); openSaleDialog(detailArtwork); }}>
+                      <ShoppingCart className="size-4 mr-2" />Mark as Sold
+                    </Button>
+                  )}
+                </DialogFooter>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isSaleDialogOpen} onOpenChange={setIsSaleDialogOpen}>
         <DialogContent>

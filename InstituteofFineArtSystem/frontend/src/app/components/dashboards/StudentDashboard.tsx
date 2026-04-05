@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Calendar, Upload, Trophy, TrendingUp, Loader2 } from 'lucide-react';
+import { Calendar, Upload, Trophy, TrendingUp, Loader2, Eye } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { competitionsApi, CompetitionDto } from '../../api/competitions';
 import { submissionsApi, SubmissionDto } from '../../api/submissions';
 import { awardsApi, StudentAwardDto } from '../../api/awards';
 import { toast } from 'sonner';
+
+const RATING_COLOR: Record<string, string> = {
+  Best: 'bg-green-100 text-green-800', Better: 'bg-blue-100 text-blue-800',
+  Good: 'bg-purple-100 text-purple-800', Moderate: 'bg-yellow-100 text-yellow-800',
+  Normal: 'bg-slate-100 text-slate-800',
+};
+const AWARD_ICON: Record<string, string> = {
+  'First Prize': '🥇', 'Second Prize': '🥈', 'Third Prize': '🥉',
+  'Honorable Mention': '🏅', 'Best Use of Color': '🎨',
+};
 
 export function StudentDashboard() {
   const { currentUser } = useAuth();
@@ -14,6 +26,7 @@ export function StudentDashboard() {
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [awards, setAwards] = useState<StudentAwardDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailSubmission, setDetailSubmission] = useState<SubmissionDto | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -32,15 +45,7 @@ export function StudentDashboard() {
   const ongoingCompetitions = competitions.filter((c) => c.status === 'Ongoing');
   const upcomingCompetitions = competitions.filter((c) => c.status === 'Upcoming');
 
-  const getRatingColor = (rating?: string) => {
-    switch (rating) {
-      case 'Best':     return 'bg-green-100 text-green-800';
-      case 'Better':   return 'bg-blue-100 text-blue-800';
-      case 'Good':     return 'bg-purple-100 text-purple-800';
-      case 'Moderate': return 'bg-yellow-100 text-yellow-800';
-      default:         return 'bg-slate-100 text-slate-800';
-    }
-  };
+  const getRatingColor = (rating?: string) => RATING_COLOR[rating ?? ''] ?? 'bg-slate-100 text-slate-800';
 
   if (loading) {
     return (
@@ -122,7 +127,9 @@ export function StudentDashboard() {
                   const competition = competitions.find((c) => c.id === submission.competitionId);
                   const review = submission.review;
                   return (
-                    <div key={submission.id} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
+                    <div key={submission.id}
+                      className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg cursor-pointer hover:bg-slate-50 transition-colors group"
+                      onClick={() => setDetailSubmission(submission)}>
                       {submission.workUrl && (
                         <img src={submission.workUrl} alt={submission.title} className="size-16 sm:size-20 object-cover rounded" />
                       )}
@@ -140,6 +147,7 @@ export function StudentDashboard() {
                           </span>
                         </div>
                       </div>
+                      <Eye className="size-4 text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" />
                     </div>
                   );
                 })}
@@ -184,8 +192,7 @@ export function StudentDashboard() {
         </Card>
       </div>
 
-      {awards.length > 0 && (
-        <Card>
+      {awards.length > 0 && (        <Card>
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Trophy className="size-4 sm:size-5 text-yellow-600" />My Awards & Achievements
@@ -205,6 +212,48 @@ export function StudentDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Submission Detail Dialog */}
+      <Dialog open={!!detailSubmission} onOpenChange={open => { if (!open) setDetailSubmission(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {detailSubmission && (() => {
+            const review = detailSubmission.review;
+            const comp = competitions.find(c => c.id === detailSubmission.competitionId);
+            const award = awards.find(a => a.submissionId === detailSubmission.id);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{detailSubmission.title}</DialogTitle>
+                  <DialogDescription>{comp?.title}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {detailSubmission.workUrl && <img src={detailSubmission.workUrl} alt={detailSubmission.title} className="w-full h-56 object-cover rounded-lg" />}
+                  {award && (
+                    <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <span className="text-2xl">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>
+                      <div><p className="font-semibold text-yellow-800">{award.awardName}</p><p className="text-xs text-yellow-600">Awarded {new Date(award.awardedDate).toLocaleDateString()}</p></div>
+                    </div>
+                  )}
+                  {detailSubmission.description && <div><p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Story</p><p className="text-sm text-slate-700">{detailSubmission.description}</p></div>}
+                  {detailSubmission.quotation && <div><p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Quotation</p><p className="text-sm italic text-slate-600">"{detailSubmission.quotation}"</p></div>}
+                  {review ? (
+                    <div className="border rounded-lg p-4 space-y-2 bg-slate-50">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm">Staff Review</p>
+                        <Badge className={RATING_COLOR[review.ratingLevel] ?? 'bg-slate-100 text-slate-800'}>{review.ratingLevel}</Badge>
+                      </div>
+                      {review.strengths && <div><p className="text-xs font-semibold text-green-700 mb-1">✅ Strengths</p><p className="text-sm text-slate-700">{review.strengths}</p></div>}
+                      {review.weaknesses && <div><p className="text-xs font-semibold text-red-700 mb-1">⚠️ Areas to Improve</p><p className="text-sm text-slate-700">{review.weaknesses}</p></div>}
+                      {review.improvements && <div><p className="text-xs font-semibold text-blue-700 mb-1">💡 Suggestions</p><p className="text-sm text-slate-700">{review.improvements}</p></div>}
+                      <p className="text-xs text-slate-400">Reviewed: {new Date(review.reviewedAt).toLocaleDateString()}</p>
+                    </div>
+                  ) : <p className="text-sm text-slate-500 italic">No review yet.</p>}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

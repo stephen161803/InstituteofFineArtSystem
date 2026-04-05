@@ -11,7 +11,8 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';import { Edit, Trash2, Upload as UploadIcon, Image as ImageIcon, X, Download, Trophy, Star, Eye, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Edit, Trash2, Upload as UploadIcon, Image as ImageIcon, X, Download, Trophy, Star, Eye, Loader2, Search } from 'lucide-react';
 import { api } from '../../api/client';
 import { toast } from 'sonner';
 
@@ -48,6 +49,7 @@ export function StudentSubmissions() {
   const [imagePreview, setImagePreview] = useState('');
   const [detailSubmission, setDetailSubmission] = useState<SubmissionDto | null>(null);
   const [selectedAward, setSelectedAward] = useState<StudentAwardDto | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +94,36 @@ export function StudentSubmissions() {
       submissions: mySubmissions.filter((s) => s.competitionId === comp.id),
     }))
     .filter((g) => g.submissions.length > 0);
+
+  const q = searchQuery.trim().toLowerCase();
+
+  const filteredGroups = q
+    ? competitionGroups
+        .map(g => ({
+          ...g,
+          submissions: g.submissions.filter(s =>
+            (s.title ?? '').toLowerCase().includes(q) ||
+            g.competition.title.toLowerCase().includes(q)
+          ),
+        }))
+        .filter(g => g.submissions.length > 0 || g.competition.title.toLowerCase().includes(q))
+    : competitionGroups;
+
+  const filteredBest = mySubmissions.filter(s =>
+    s.review?.ratingLevel === 'Best' &&
+    (!q || (s.title ?? '').toLowerCase().includes(q) ||
+      (competitions.find(c => c.id === s.competitionId)?.title ?? '').toLowerCase().includes(q))
+  );
+
+  const filteredExhibited = exhibitedItems.filter(es =>
+    !q || (es.submissionTitle ?? '').toLowerCase().includes(q)
+  );
+
+  const filteredAwards = myAwards.filter(a =>
+    !q || (a.awardName ?? '').toLowerCase().includes(q) ||
+    (a.competitionTitle ?? '').toLowerCase().includes(q) ||
+    (a.submissionTitle ?? '').toLowerCase().includes(q)
+  );
 
   const canEdit = (sub: SubmissionDto) => {
     if (currentUser?.role !== 'student') return false;
@@ -177,9 +209,16 @@ export function StudentSubmissions() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">My Portfolio</h1>
-        <p className="text-slate-600">All your submissions, reviews, exhibition status, and awards</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold">My Portfolio</h1>
+          <p className="text-slate-600">All your submissions, reviews, exhibition status, and awards</p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <Input placeholder="Search submissions, awards..." value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+        </div>
       </div>
 
       {/* Edit Dialog */}
@@ -277,19 +316,70 @@ export function StudentSubmissions() {
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="by-competition">
+      <Tabs defaultValue="all">
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="all">All ({mySubmissions.length})</TabsTrigger>
           <TabsTrigger value="by-competition">By Competition</TabsTrigger>
           <TabsTrigger value="best-rated">Best Rated</TabsTrigger>
           <TabsTrigger value="exhibitions">Exhibition Status</TabsTrigger>
           <TabsTrigger value="awards">Awards</TabsTrigger>
         </TabsList>
 
+        {/* TAB 0: All */}
+        <TabsContent value="all" className="mt-4">
+          {(() => {
+            const allFiltered = mySubmissions.filter(s => {
+              if (!q) return true;
+              const comp = competitions.find(c => c.id === s.competitionId);
+              return (s.title ?? '').toLowerCase().includes(q) ||
+                (comp?.title ?? '').toLowerCase().includes(q);
+            });
+            if (allFiltered.length === 0) return (
+              <Card><CardContent className="p-12 text-center">
+                <UploadIcon className="size-12 mx-auto mb-4 text-slate-400" />
+                <p className="text-slate-500">No submissions found.</p>
+              </CardContent></Card>
+            );
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {allFiltered.map(sub => {
+                  const comp = competitions.find(c => c.id === sub.competitionId);
+                  const review = sub.review;
+                  const award = myAwards.find(a => a.submissionId === sub.id);
+                  const editable = canEdit(sub);
+                  return (
+                    <div key={sub.id} className="border rounded-lg overflow-hidden">
+                      {sub.workUrl && <img src={sub.workUrl} alt={sub.title} className="w-full h-40 object-cover" />}
+                      <div className="p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-sm">{sub.title}</h4>
+                          {award && <span className="text-lg shrink-0">{AWARD_ICON[award.awardName ?? ''] ?? '🏆'}</span>}
+                        </div>
+                        <p className="text-xs text-slate-500">{comp?.title}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {review ? <Badge className={`text-xs ${RATING_COLOR[review.ratingLevel]}`}>{review.ratingLevel}</Badge> : <Badge variant="outline" className="text-xs">Pending Review</Badge>}
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setDetailSubmission(sub)}><Eye className="size-3 mr-1" />View</Button>
+                          {editable && <>
+                            <Button size="sm" variant="outline" onClick={() => handleEdit(sub)}><Edit className="size-3" /></Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDelete(sub.id)}><Trash2 className="size-3 text-red-600" /></Button>
+                          </>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </TabsContent>
+
         {/* TAB 1: By competition */}
         <TabsContent value="by-competition" className="space-y-6 mt-4">
-          {competitionGroups.length === 0 ? (
+          {filteredGroups.length === 0 ? (
             <Card><CardContent className="p-12 text-center"><UploadIcon className="size-12 mx-auto mb-4 text-slate-400" /><h3 className="font-semibold mb-2">No Submissions Yet</h3><p className="text-slate-600">Go to Competitions to submit your artwork.</p></CardContent></Card>
-          ) : competitionGroups.map(({ competition, submissions: subs }) => (
+          ) : filteredGroups.map(({ competition, submissions: subs }) => (
             <Card key={competition.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
@@ -341,7 +431,7 @@ export function StudentSubmissions() {
             <CardHeader><CardTitle className="flex items-center gap-2"><Star className="size-5 text-yellow-500" />Best Rated Artworks</CardTitle></CardHeader>
             <CardContent>
               {(() => {
-                const bestSubs = mySubmissions.filter((s) => s.review?.ratingLevel === 'Best');
+                const bestSubs = filteredBest;
                 if (bestSubs.length === 0) return <p className="text-slate-500 text-sm py-6 text-center">No "Best" rated submissions yet.</p>;
                 return (
                   <div className="space-y-4">
@@ -379,12 +469,16 @@ export function StudentSubmissions() {
           <Card>
             <CardHeader><CardTitle>Exhibition & Sales Status</CardTitle></CardHeader>
             <CardContent>
-              {exhibitedItems.length === 0 ? (
+              {filteredExhibited.length === 0 ? (
                 <p className="text-slate-500 text-sm py-6 text-center">None of your artworks have been sent to exhibitions yet.</p>
               ) : (
                 <div className="space-y-3">
-                  {exhibitedItems.map((es) => (
-                    <div key={es.id} className="flex gap-4 p-4 border rounded-lg items-start">
+                  {filteredExhibited.map((es) => (
+                    <div key={es.id} className="flex gap-4 p-4 border rounded-lg items-start cursor-pointer hover:bg-slate-50 transition-colors group"
+                      onClick={() => {
+                        const sub = submissions.find(s => s.id === es.submissionId);
+                        if (sub) setDetailSubmission(sub);
+                      }}>
                       {es.workUrl && <img src={es.workUrl} alt={es.submissionTitle} className="size-20 object-cover rounded shrink-0" />}
                       <div className="flex-1 space-y-1">
                         <div className="flex items-start justify-between gap-2">
@@ -415,12 +509,13 @@ export function StudentSubmissions() {
 
         {/* TAB 4: Awards */}
         <TabsContent value="awards" className="mt-4">
-          {myAwards.length === 0 ? (
-            <Card><CardContent className="p-12 text-center"><Trophy className="size-12 mx-auto mb-4 text-yellow-400" /><h3 className="font-semibold mb-2">No Awards Yet</h3><p className="text-slate-600">Keep participating to earn awards!</p></CardContent></Card>
+          {myAwards.length === 0 ? (            <Card><CardContent className="p-12 text-center"><Trophy className="size-12 mx-auto mb-4 text-yellow-400" /><h3 className="font-semibold mb-2">No Awards Yet</h3><p className="text-slate-600">Keep participating to earn awards!</p></CardContent></Card>
+          ) : filteredAwards.length === 0 ? (
+            <Card><CardContent className="p-12 text-center"><p className="text-slate-500">No awards match your search.</p></CardContent></Card>
           ) : (
             <div className="space-y-4">
-              {competitions.filter((c) => myAwards.some((a) => a.competitionTitle === c.title)).map((comp) => {
-                const compAwards = myAwards.filter((a) => a.competitionTitle === comp.title);
+              {competitions.filter((c) => filteredAwards.some((a) => a.competitionTitle === c.title)).map((comp) => {
+                const compAwards = filteredAwards.filter((a) => a.competitionTitle === comp.title);
                 return (
                   <Card key={comp.id}>
                     <CardHeader className="pb-3">

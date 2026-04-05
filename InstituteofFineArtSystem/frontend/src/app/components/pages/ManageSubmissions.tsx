@@ -5,6 +5,7 @@ import { competitionsApi, type CompetitionDto, type CompetitionCriteriaDto } fro
 import { usersApi, type StudentDto } from '../../api/users';
 import { awardsApi } from '../../api/awards';
 import { exhibitionsApi } from '../../api/exhibitions';
+import { useAuth } from '../../context/AuthContext';
 import { RatingLevel } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -27,6 +28,8 @@ function calcRatingFromScore(score: number): RatingLevel {
 }
 
 export function ManageSubmissions() {
+  const { currentUser } = useAuth();
+  const isManager = currentUser?.role === 'manager';
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [students, setStudents] = useState<StudentDto[]>([]);
@@ -271,11 +274,11 @@ export function ManageSubmissions() {
                         const lockReason = getLockReason(submission.id);
                         return lockReason ? (
                           <span className="text-xs text-slate-400 italic">🔒 {lockReason}</span>
-                        ) : (
+                        ) : !isManager ? (
                           <Button size="sm" onClick={() => openReviewDialog(submission)}>
                             <Star className="size-4 mr-1" />{review ? 'Update' : 'Rate'}
                           </Button>
-                        );
+                        ) : null;
                       })()}
                     </div>
                   </CardContent>

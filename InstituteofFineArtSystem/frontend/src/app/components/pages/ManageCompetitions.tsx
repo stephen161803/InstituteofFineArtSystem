@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { competitionsApi, CompetitionDto, CriteriaDto } from '../../api/competitions';
 import { awardsApi, AwardDto } from '../../api/awards';
 import { submissionsApi, SubmissionDto } from '../../api/submissions';
+import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -38,6 +39,8 @@ const defaultForm: FormData = {
 };
 
 export function ManageCompetitions() {
+  const { currentUser } = useAuth();
+  const isManager = currentUser?.role === 'manager';
   const [competitions, setCompetitions] = useState<CompetitionDto[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionDto[]>([]);
   const [allCriteria, setAllCriteria] = useState<CriteriaDto[]>([]);
@@ -222,6 +225,7 @@ export function ManageCompetitions() {
           <p className="text-slate-600">Create and manage art competitions</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          {!isManager && (
           <DialogTrigger asChild>
             <Button onClick={() => {
               // Default 3 awards when creating new competition
@@ -238,6 +242,7 @@ export function ManageCompetitions() {
               <Plus className="size-4 mr-2" />Add Competition
             </Button>
           </DialogTrigger>
+          )}
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingCompetition ? 'Edit Competition' : 'Create New Competition'}</DialogTitle>
@@ -461,10 +466,12 @@ export function ManageCompetitions() {
                         <Button size="sm" variant="outline" onClick={() => setDetailCompetition(competition)}>
                           <Eye className="size-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(competition)}>
-                          <Edit className="size-4" />
-                        </Button>
-                        {competition.status === 'Upcoming' && (
+                        {!isManager && (
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(competition)}>
+                            <Edit className="size-4" />
+                          </Button>
+                        )}
+                        {!isManager && competition.status === 'Upcoming' && (
                           <Button size="sm" variant="outline" onClick={() => setDeleteTarget(competition)}>
                             <Trash2 className="size-4 text-red-600" />
                           </Button>
@@ -538,9 +545,11 @@ export function ManageCompetitions() {
               )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setDetailCompetition(null)}>Close</Button>
-                <Button onClick={() => { setDetailCompetition(null); handleEdit(detailCompetition); }}>
-                  <Edit className="size-4 mr-2" />Edit
-                </Button>
+                {!isManager && (
+                  <Button onClick={() => { setDetailCompetition(null); handleEdit(detailCompetition); }}>
+                    <Edit className="size-4 mr-2" />Edit
+                  </Button>
+                )}
               </div>
             </div>
           )}

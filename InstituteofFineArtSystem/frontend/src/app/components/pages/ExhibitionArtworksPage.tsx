@@ -2,11 +2,12 @@ import { Link, useParams, useNavigate } from 'react-router';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { useAuth } from '../../context/AuthContext';
 import svgPaths from '../../../imports/svg-dh8fahrk4q';
-import { ArrowLeft, Calendar, MapPin, FileText, DollarSign, ShoppingCart, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, FileText, DollarSign, ShoppingCart, Loader2, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { exhibitionsApi, ExhibitionDto } from '../../api/exhibitions';
+import { exhibitionsApi, ExhibitionDto, ExhibitionSubmissionDto } from '../../api/exhibitions';
 import { toast } from 'sonner';
 
 export function ExhibitionArtworksPage() {
@@ -15,6 +16,7 @@ export function ExhibitionArtworksPage() {
   const { isAuthenticated } = useAuth();
   const [exhibition, setExhibition] = useState<ExhibitionDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedArtwork, setSelectedArtwork] = useState<ExhibitionSubmissionDto | null>(null);
 
   useEffect(() => {
     exhibitionsApi.getById(Number(id))
@@ -136,11 +138,14 @@ export function ExhibitionArtworksPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {artworks.map((es) => (
-                <Card key={es.id} className="overflow-hidden group">
+                <Card key={es.id} className="overflow-hidden group cursor-pointer" onClick={() => setSelectedArtwork(es)}>
                   <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
                     {es.workUrl && <img src={es.workUrl} alt={es.submissionTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />}
                     <div className="absolute top-3 right-3">
                       {es.status === 'Sold' ? <Badge className="bg-gray-900 text-white">SOLD</Badge> : <Badge className="bg-yellow-400 text-gray-900">For Sale</Badge>}
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                      <Eye className="size-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                     </div>
                   </div>
                   <CardContent className="p-4 space-y-3">
@@ -154,13 +159,6 @@ export function ExhibitionArtworksPage() {
                         <DollarSign className="size-4" />{es.proposedPrice.toLocaleString()}
                       </div>
                     </div>
-                    {es.status === 'Sold' ? (
-                      <Badge className="w-full justify-center bg-gray-600 text-white">Sold Out</Badge>
-                    ) : (
-                      <Button className="w-full bg-green-600 hover:bg-green-700 text-white" onClick={() => handleBuyClick(es)}>
-                        <ShoppingCart className="size-4 mr-2" />Buy Now
-                      </Button>
-                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -169,8 +167,48 @@ export function ExhibitionArtworksPage() {
         </div>
       </section>
 
-      {!isAuthenticated && (
-        <section className="py-12 sm:py-16 bg-gradient-to-r from-[#9810fa] to-[#155dfc]">
+      {/* Artwork Detail Dialog */}
+      <Dialog open={!!selectedArtwork} onOpenChange={open => { if (!open) setSelectedArtwork(null); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          {selectedArtwork && (
+            <>
+              {selectedArtwork.workUrl && (
+                <div className="relative h-72 bg-slate-100">
+                  <img src={selectedArtwork.workUrl} alt={selectedArtwork.submissionTitle ?? ''} className="w-full h-full object-cover" />
+                  <div className="absolute top-3 right-3">
+                    {selectedArtwork.status === 'Sold'
+                      ? <Badge className="bg-gray-900 text-white">SOLD</Badge>
+                      : <Badge className="bg-yellow-400 text-gray-900">For Sale</Badge>}
+                  </div>
+                </div>
+              )}
+              <div className="p-5 space-y-4">
+                <DialogHeader>
+                  <DialogTitle className="text-xl">{selectedArtwork.submissionTitle}</DialogTitle>
+                  <DialogDescription>By {selectedArtwork.studentName}</DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center justify-between py-2 border-y">
+                  <span className="text-sm text-slate-500">Price</span>
+                  <span className="font-bold text-lg text-[#9810fa]">${selectedArtwork.proposedPrice.toLocaleString()}</span>
+                </div>
+                {selectedArtwork.status === 'Sold' && selectedArtwork.sale && (
+                  <p className="text-sm text-slate-500 italic">This artwork has been sold.</p>
+                )}
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setSelectedArtwork(null)}>Close</Button>
+                  {selectedArtwork.status !== 'Sold' && (
+                    <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setSelectedArtwork(null); handleBuyClick(selectedArtwork); }}>
+                      <ShoppingCart className="size-4 mr-2" />Buy Now
+                    </Button>
+                  )}
+                </DialogFooter>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {!isAuthenticated && (        <section className="py-12 sm:py-16 bg-gradient-to-r from-[#9810fa] to-[#155dfc]">
           <div className="max-w-[1150px] mx-auto px-4 sm:px-6 md:px-12 lg:px-[79px] text-center">
             <h3 className="text-2xl sm:text-3xl font-medium text-white mb-3">Ready to Purchase?</h3>
             <p className="text-base sm:text-lg text-[#f3e8ff] mb-6">Register an account to buy artworks and support our talented students</p>
