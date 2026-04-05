@@ -29,7 +29,8 @@ public record StaffDto(
     string? Phone,
     string? DateJoined,
     string? SubjectHandled,
-    string? Remarks
+    string? Remarks,
+    string? AvatarUrl
 );
 
 public record StudentDto(
@@ -96,7 +97,8 @@ public record CustomerDto(
     string? Notes,
     string? CreatedAt,
     int PurchaseCount = 0,
-    decimal TotalSpent = 0
+    decimal TotalSpent = 0,
+    string? AvatarUrl = null
 );
 
 public record UpdateCustomerRequest(
@@ -114,7 +116,8 @@ public record AdminUserDto(
     string? Email,
     string? Phone,
     string Role,
-    string CreatedAt
+    string CreatedAt,
+    string? AvatarUrl = null
 );
 
 public record CreateAdminUserRequest(

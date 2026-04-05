@@ -23,7 +23,7 @@ public class UsersController(AppDbContext db) : ControllerBase
             .Select(s => new StaffDto(
                 s.UserId, s.User.FullName, s.User.Email, s.User.Phone,
                 s.DateJoined.HasValue ? s.DateJoined.Value.ToString("yyyy-MM-dd") : null,
-                s.SubjectHandled, s.Remarks))
+                s.SubjectHandled, s.Remarks, s.User.AvatarUrl))
             .ToListAsync();
         return Ok(list);
     }
@@ -222,7 +222,8 @@ public class UsersController(AppDbContext db) : ControllerBase
                 c.Address, c.Notes,
                 c.CreatedAt.ToString("yyyy-MM-dd"),
                 c.Sales.Count,
-                c.Sales.Sum(s => s.SoldPrice)))
+                c.Sales.Sum(s => s.SoldPrice),
+                c.User.AvatarUrl))
             .ToListAsync();
         return Ok(list);
     }
@@ -274,7 +275,8 @@ public class UsersController(AppDbContext db) : ControllerBase
             .Select(u => new AdminUserDto(
                 u.Id, u.Username, u.FullName, u.Email, u.Phone,
                 u.Role.RoleName,
-                u.CreatedAt.ToString("yyyy-MM-dd")))
+                u.CreatedAt.ToString("yyyy-MM-dd"),
+                u.AvatarUrl))
             .ToListAsync();
         return Ok(list);
     }

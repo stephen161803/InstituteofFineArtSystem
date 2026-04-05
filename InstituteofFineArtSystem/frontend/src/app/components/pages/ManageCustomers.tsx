@@ -164,24 +164,30 @@ export function ManageCustomers() {
           <div className="space-y-3">
             {filtered.map(c => (
               <div key={c.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold">{c.fullName}</h4>
-                    <Badge variant="secondary" className="text-xs">Customer</Badge>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-sm text-slate-600">
-                    {c.email && <span>{c.email}</span>}
-                    {c.phone && <span>{c.phone}</span>}
-                    {c.address && <span className="truncate">{c.address}</span>}
-                  </div>
-                  {c.notes && <p className="text-xs text-slate-500 mt-1 italic">{c.notes}</p>}
-                  <div className="flex items-center gap-4 mt-1">
-                    {c.createdAt && <p className="text-xs text-slate-400">Joined: {new Date(c.createdAt).toLocaleDateString()}</p>}
-                    {(c.purchaseCount ?? 0) > 0 && (
-                      <p className="text-xs text-green-600 font-medium">
-                        {c.purchaseCount} purchase{(c.purchaseCount ?? 0) > 1 ? 's' : ''} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c.totalSpent ?? 0)}
-                      </p>
-                    )}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {c.avatarUrl
+                    ? <img src={c.avatarUrl} alt={c.fullName} className="size-10 rounded-full object-cover shrink-0" />
+                    : <div className="size-10 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-semibold shrink-0">{c.fullName?.charAt(0) ?? '?'}</div>
+                  }
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold">{c.fullName}</h4>
+                      <Badge variant="secondary" className="text-xs">Customer</Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-sm text-slate-600">
+                      {c.email && <span>{c.email}</span>}
+                      {c.phone && <span>{c.phone}</span>}
+                      {c.address && <span className="truncate">{c.address}</span>}
+                    </div>
+                    {c.notes && <p className="text-xs text-slate-500 mt-1 italic">{c.notes}</p>}
+                    <div className="flex items-center gap-4 mt-1">
+                      {c.createdAt && <p className="text-xs text-slate-400">Joined: {new Date(c.createdAt).toLocaleDateString()}</p>}
+                      {(c.purchaseCount ?? 0) > 0 && (
+                        <p className="text-xs text-green-600 font-medium">
+                          {c.purchaseCount} purchase{(c.purchaseCount ?? 0) > 1 ? 's' : ''} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c.totalSpent ?? 0)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4 shrink-0">

@@ -197,13 +197,19 @@ export function ManageAdminUsers() {
           <div className="space-y-3">
             {admins.map(u => (
               <div key={u.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{u.fullName}</span>
-                    <Badge className="bg-red-100 text-red-800 text-xs">Admin</Badge>
-                    {u.id === currentUser?.id && <Badge variant="outline" className="text-xs">You</Badge>}
+                <div className="flex items-center gap-3">
+                  {u.avatarUrl
+                    ? <img src={u.avatarUrl} alt={u.fullName} className="size-10 rounded-full object-cover shrink-0" />
+                    : <div className="size-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-semibold shrink-0">{u.fullName?.charAt(0) ?? '?'}</div>
+                  }
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{u.fullName}</span>
+                      <Badge className="bg-red-100 text-red-800 text-xs">Admin</Badge>
+                      {u.id === currentUser?.id && <Badge variant="outline" className="text-xs">You</Badge>}
+                    </div>
+                    <p className="text-sm text-slate-500">@{u.username}{u.email ? ` · ${u.email}` : ''}</p>
                   </div>
-                  <p className="text-sm text-slate-500">@{u.username}{u.email ? ` · ${u.email}` : ''}</p>
                 </div>
                 {u.id !== currentUser?.id && (
                   <Button size="sm" variant="outline" onClick={() => handleDelete(u)}>
@@ -229,12 +235,18 @@ export function ManageAdminUsers() {
           <div className="space-y-3">
             {managers.map(u => (
               <div key={u.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{u.fullName}</span>
-                    <Badge className="bg-blue-100 text-blue-800 text-xs">Manager</Badge>
+                <div className="flex items-center gap-3">
+                  {u.avatarUrl
+                    ? <img src={u.avatarUrl} alt={u.fullName} className="size-10 rounded-full object-cover shrink-0" />
+                    : <div className="size-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold shrink-0">{u.fullName?.charAt(0) ?? '?'}</div>
+                  }
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{u.fullName}</span>
+                      <Badge className="bg-blue-100 text-blue-800 text-xs">Manager</Badge>
+                    </div>
+                    <p className="text-sm text-slate-500">@{u.username}{u.email ? ` · ${u.email}` : ''}</p>
                   </div>
-                  <p className="text-sm text-slate-500">@{u.username}{u.email ? ` · ${u.email}` : ''}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => handleDelete(u)}>
                   <Trash2 className="size-4 text-red-600" />

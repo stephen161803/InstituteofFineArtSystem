@@ -8,6 +8,7 @@ export interface StaffDto {
   dateJoined?: string;
   subjectHandled?: string;
   remarks?: string;
+  avatarUrl?: string;
 }
 
 export interface StudentDto {
@@ -33,6 +34,7 @@ export interface CustomerDto {
   createdAt?: string;
   purchaseCount?: number;
   totalSpent?: number;
+  avatarUrl?: string;
 }
 
 export interface AdminUserDto {
@@ -43,6 +45,7 @@ export interface AdminUserDto {
   phone?: string;
   role: string;
   createdAt?: string;
+  avatarUrl?: string;
 }
 
 export const usersApi = {

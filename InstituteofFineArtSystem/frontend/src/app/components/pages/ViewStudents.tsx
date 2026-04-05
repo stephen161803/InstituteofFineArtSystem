@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Search, Eye, Trophy, Upload, Phone, Mail, User, Loader2 } from 'lucide-react';
+import { Search, Eye, Trophy, Upload, Phone, Mail, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { toast } from 'sonner';
 
@@ -88,9 +88,10 @@ export function ViewStudents() {
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="bg-blue-100 p-2.5 rounded-full">
-                          <User className="size-5 text-blue-600" />
-                        </div>
+                        {student.avatarUrl
+                          ? <img src={student.avatarUrl} alt={student.fullName} className="size-12 rounded-full object-cover shrink-0" />
+                          : <div className="size-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shrink-0">{student.fullName?.charAt(0) ?? '?'}</div>
+                        }
                         <div>
                           <h3 className="font-semibold text-base">{student.fullName}</h3>
                           <p className="text-sm text-slate-600">{student.admissionNumber}</p>
@@ -145,7 +146,18 @@ export function ViewStudents() {
 
               <TabsContent value="personal" className="space-y-4">
                 <Card>
-                  <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
+                  <CardHeader>
+                    <div className="flex items-center gap-4">
+                      {selectedStudent.avatarUrl
+                        ? <img src={selectedStudent.avatarUrl} alt={selectedStudent.fullName} className="size-16 rounded-full object-cover shrink-0" />
+                        : <div className="size-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold shrink-0">{selectedStudent.fullName?.charAt(0) ?? '?'}</div>
+                      }
+                      <div>
+                        <CardTitle className="text-lg">{selectedStudent.fullName}</CardTitle>
+                        <p className="text-sm text-slate-500">{selectedStudent.admissionNumber}</p>
+                      </div>
+                    </div>
+                  </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-4">
                     <div><label className="text-sm font-medium text-slate-600">Full Name</label><p className="font-semibold">{selectedStudent.fullName}</p></div>
                     <div><label className="text-sm font-medium text-slate-600">Email</label><p className="font-semibold">{selectedStudent.email}</p></div>
