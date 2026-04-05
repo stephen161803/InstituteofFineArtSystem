@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router';
 import { submissionsApi, SubmissionDto } from '../../api/submissions';
 import { awardsApi, StudentAwardDto } from '../../api/awards';
 import { exhibitionsApi, ExhibitionSubmissionDto } from '../../api/exhibitions';
+import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 export function ArtworkDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser, isAuthenticated } = useAuth();
   const [submission, setSubmission] = useState<SubmissionDto | null>(null);
   const [awards, setAwards] = useState<StudentAwardDto[]>([]);
   const [exhibitionSub, setExhibitionSub] = useState<ExhibitionSubmissionDto | null>(null);
@@ -196,6 +198,12 @@ export function ArtworkDetail() {
                     </div>
                     {exhibitionSub.status === 'Sold' ? (
                       <Badge className="bg-green-100 text-green-700 mt-2 w-full justify-center">Sold</Badge>
+                    ) : !isAuthenticated ? (
+                      <Button className="w-full mt-2 bg-purple-600 hover:bg-purple-700" onClick={() => navigate('/login')}>
+                        <DollarSign className="size-4 mr-2" />Login to Purchase
+                      </Button>
+                    ) : currentUser?.role !== 'customer' ? (
+                      <p className="text-xs text-slate-500 italic mt-2 text-center">Only customers can purchase artworks.</p>
                     ) : (
                       <Button className="w-full mt-2 bg-purple-600 hover:bg-purple-700" onClick={() => navigate(`/purchase/${exhibitionSub.submissionId}`)}>
                         <DollarSign className="size-4 mr-2" />Purchase Artwork

@@ -95,12 +95,15 @@ export function HomePage() {
   const ongoingCompetitions = competitions.filter((c) => c.status === 'Ongoing');
   const upcomingCompetitions = competitions.filter((c) => c.status === 'Upcoming');
 
-  // Recent winners: last 6 student awards
-  const recentWinners = studentAwards.slice(0, 6).map((award) => {
-    const submission = submissions.find((s) => s.id === award.submissionId);
-    const competition = competitions.find((c) => c.title === award.competitionTitle);
-    return { award, submission, competition };
-  }).filter(({ submission }) => submission);
+  // Recent winners: last 6 student awards sorted by date desc
+  const recentWinners = [...studentAwards]
+    .sort((a, b) => new Date(b.awardedDate).getTime() - new Date(a.awardedDate).getTime())
+    .slice(0, 6)
+    .map((award) => {
+      const submission = submissions.find((s) => s.id === award.submissionId);
+      const competition = competitions.find((c) => c.id === submission?.competitionId);
+      return { award, submission, competition };
+    }).filter(({ submission }) => submission);
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
@@ -407,9 +410,11 @@ export function HomePage() {
                           <span className="text-red-600 font-bold">{daysLeft > 0 ? `${daysLeft} days left` : 'Ended'}</span>
                         </div>
                       </div>
-                      <Button onClick={() => navigate(isAuthenticated ? `/competitions/${competition.id}` : '/login')} className="w-full bg-[#030213] text-white rounded-lg h-8 sm:h-9 text-sm hover:bg-[#030213]/90">
-                        Submit Artwork
-                      </Button>
+                      {(!isAuthenticated || currentUser?.role === 'student') && (
+                        <Button onClick={() => navigate(isAuthenticated ? `/competitions/${competition.id}` : '/login')} className="w-full bg-[#030213] text-white rounded-lg h-8 sm:h-9 text-sm hover:bg-[#030213]/90">
+                          Submit Artwork
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );
@@ -462,9 +467,6 @@ export function HomePage() {
                           </div>
                         </div>
                       </div>
-                      <Button onClick={() => navigate('/login')} variant="outline" className="w-full border-blue-600 text-blue-700 rounded-lg h-9 text-sm hover:bg-blue-50">
-                        Set Reminder
-                      </Button>
                     </div>
                   </div>
                 );
@@ -505,8 +507,8 @@ export function HomePage() {
                   <div className="p-4 sm:p-6">
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="text-base sm:text-lg font-medium text-[#0a0a0a]">{award.studentName ?? submission.studentName}</h4>
-                      <Badge className="bg-yellow-100 text-yellow-700 rounded-lg px-2 sm:px-3 py-1 text-xs font-medium">
-                        {award.awardName?.includes('1st') ? '1st Prize' : award.awardName?.includes('2nd') ? '2nd Prize' : '3rd Prize'}
+                      <Badge className="bg-yellow-100 text-yellow-700 rounded-lg px-2 sm:px-3 py-1 text-xs font-medium shrink-0">
+                        {award.awardName ?? 'Award'}
                       </Badge>
                     </div>
                     <p className="text-xs sm:text-sm text-[#717182] mb-1">{submission.title}</p>
